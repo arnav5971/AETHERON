@@ -1,6 +1,9 @@
 package com.aetheron.browser
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.app.AlertDialog
+import android.content.pm.PackageManager
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
@@ -11,6 +14,8 @@ import android.net.http.SslError
 import android.os.Bundle
 import android.os.Environment
 import android.webkit.DownloadListener
+import android.webkit.GeolocationPermissions
+import android.webkit.PermissionRequest
 import android.webkit.SafeBrowsingResponse
 import android.webkit.SslErrorHandler
 import android.webkit.URLUtil
@@ -65,11 +70,128 @@ class MainActivity : ComponentActivity() {
     private var previousSystemUiVisibility: Int = 0
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
     private lateinit var fileChooserLauncher: ActivityResultLauncher<Intent>
+    private lateinit var sitePermissionLauncher: ActivityResultLauncher<Array<String>>
+    private var pendingRuntimePermissionResult: ((Map<String, Boolean>) -> Unit)? = null
+    private var pendingWebPermissionRequest: PermissionRequest? = null
+
+    private fun requestSiteRuntimePermissions(
+        permissions: Array<String>,
+        onResult: (Map<String, Boolean>) -> Unit
+    ) {
+        pendingRuntimePermissionResult = onResult
+        try {
+            sitePermissionLauncher.launch(permissions)
+        } catch (_: Exception) {
+            pendingRuntimePermissionResult = null
+            onResult(emptyMap())
+        }
+    }
+
+    private fun showSitePermissionConsent(
+        origin: Uri,
+        purpose: String,
+        permissions: Array<String>,
+        requireAll: Boolean = true,
+        onResult: (Boolean) -> Unit
+    ) {
+        val host = origin.host ?: "This website"
+        AlertDialog.Builder(this)
+            .setTitle("$host wants to use $purpose")
+            .setMessage("Allow only if you trust this website. Android will ask for the required device permission next.")
+            .setNegativeButton("Don't allow") { _, _ -> onResult(false) }
+            .setPositiveButton("Continue") { _, _ ->
+                val missing = permissions.filter {
+                    checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+                }.toTypedArray()
+                if (missing.isEmpty()) {
+                    onResult(true)
+                } else {
+                    requestSiteRuntimePermissions(missing) { results ->
+                        val granted = if (requireAll) {
+                            missing.all { results[it] == true }
+                        } else {
+                            permissions.any { checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }
+                        }
+                        onResult(granted)
+                    }
+                }
+            }
+            .setOnCancelListener { onResult(false) }
+            .show()
+    }
+
+    fun cancelWebPermissionRequest(request: PermissionRequest) {
+        if (pendingWebPermissionRequest === request) pendingWebPermissionRequest = null
+    }
+
+    fun handleWebPermissionRequest(request: PermissionRequest) {
+        if (!request.origin.scheme.equals("https", ignoreCase = true)) {
+            request.deny()
+            return
+        }
+        val resources = request.resources.toSet()
+        if (resources.isEmpty() || resources.any {
+                it != PermissionRequest.RESOURCE_VIDEO_CAPTURE &&
+                    it != PermissionRequest.RESOURCE_AUDIO_CAPTURE
+            }) {
+            request.deny()
+            return
+        }
+        val androidPermissions = buildList {
+            if (PermissionRequest.RESOURCE_VIDEO_CAPTURE in resources) add(Manifest.permission.CAMERA)
+            if (PermissionRequest.RESOURCE_AUDIO_CAPTURE in resources) add(Manifest.permission.RECORD_AUDIO)
+        }.toTypedArray()
+        pendingWebPermissionRequest?.deny()
+        pendingWebPermissionRequest = request
+        showSitePermissionConsent(request.origin, when {
+            resources.size == 2 -> "your camera and microphone"
+            PermissionRequest.RESOURCE_VIDEO_CAPTURE in resources -> "your camera"
+            else -> "your microphone"
+        }, androidPermissions) { allowed ->
+            if (pendingWebPermissionRequest !== request) return@showSitePermissionConsent
+            pendingWebPermissionRequest = null
+            if (allowed && androidPermissions.all {
+                    checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+                }) {
+                request.grant(resources.toTypedArray())
+            } else {
+                request.deny()
+            }
+        }
+    }
+
+    fun handleGeolocationPrompt(
+        origin: String,
+        callback: GeolocationPermissions.Callback
+    ) {
+        val uri = runCatching { Uri.parse(origin) }.getOrNull()
+        if (uri?.scheme.equals("https", ignoreCase = true).not() || uri?.host.isNullOrBlank()) {
+            callback.invoke(origin, false, false)
+            return
+        }
+        showSitePermissionConsent(
+            uri!!,
+            "your location",
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
+            requireAll = false
+        ) { allowed ->
+            val granted = allowed && (
+                checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                    checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                )
+            callback.invoke(origin, granted, false)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
+        sitePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+            val callback = pendingRuntimePermissionResult
+            pendingRuntimePermissionResult = null
+            callback?.invoke(result)
+        }
         fileChooserLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val callback = fileChooserCallback
             fileChooserCallback = null
@@ -545,6 +667,23 @@ private fun AetheronBrowser(context: Context) {
                                     override fun onReceivedTitle(view: WebView, title: String?) {
                                         currentTitle = title.orEmpty()
                                     }
+                                    override fun onPermissionRequest(request: PermissionRequest) {
+                                        (context as? MainActivity)?.handleWebPermissionRequest(request)
+                                            ?: request.deny()
+                                    }
+                                    override fun onPermissionRequestCanceled(request: PermissionRequest) {
+                                        (context as? MainActivity)?.cancelWebPermissionRequest(request)
+                                    }
+                                    override fun onGeolocationPermissionsShowPrompt(
+                                        origin: String,
+                                        callback: GeolocationPermissions.Callback
+                                    ) {
+                                        (context as? MainActivity)?.handleGeolocationPrompt(origin, callback)
+                                            ?: callback.invoke(origin, false, false)
+                                    }
+                                    override fun onGeolocationPermissionsHidePrompt() {
+                                        // No persistent site-level grant is retained by AETHERON.
+                                    }
                                     override fun onShowFileChooser(
                                         webView: WebView,
                                         filePathCallback: ValueCallback<Array<Uri>>,
@@ -731,7 +870,7 @@ private fun HomeScreen(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.VerifiedUser, null, tint = Green, modifier = Modifier.size(19.dp))
                     Spacer(Modifier.width(7.dp))
-                    Text("Private by design", color = Muted, fontSize = 13.sp)
+                    Text("Bookmarks & history stored locally", color = Muted, fontSize = 13.sp)
                     Spacer(Modifier.width(22.dp))
                     Icon(Icons.Default.KeyboardCommandKey, null, tint = Green, modifier = Modifier.size(19.dp))
                     Spacer(Modifier.width(7.dp))
