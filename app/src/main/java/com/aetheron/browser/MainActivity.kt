@@ -33,6 +33,7 @@ import android.view.WindowInsetsController
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
@@ -66,6 +67,48 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import org.json.JSONArray
 import org.json.JSONObject
+
+private fun offerSecureGoogleSignInHandoff(context: Context, currentPageUrl: String?) {
+    val safePageUri = currentPageUrl
+        ?.let { runCatching { Uri.parse(it) }.getOrNull() }
+        ?.takeIf {
+            it.scheme.equals("https", true) &&
+                !it.host.isNullOrBlank() &&
+                it.userInfo == null
+        }
+
+    if (safePageUri == null) {
+        Toast.makeText(context, "Open the website over HTTPS before signing in", Toast.LENGTH_LONG).show()
+        return
+    }
+
+    AlertDialog.Builder(context)
+        .setTitle("Continue Google sign-in in a secure browser")
+        .setMessage(
+            "Google does not allow sign-in inside embedded WebViews. AETHERON will open this page in your installed browser using a secure Custom Tab. The browser keeps its own cookies; AETHERON cannot copy those sign-in cookies into its WebView."
+        )
+        .setNegativeButton("Cancel", null)
+        .setPositiveButton("Continue") { _, _ ->
+            try {
+                CustomTabsIntent.Builder()
+                    .setShowTitle(true)
+                    .build()
+                    .launchUrl(context, safePageUri)
+            } catch (_: Exception) {
+                try {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, safePageUri)
+                            .addCategory(Intent.CATEGORY_BROWSABLE)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                } catch (_: Exception) {
+                    Toast.makeText(context, "No supported secure browser was found", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+        .show()
+}
+
 
 class MainActivity : ComponentActivity() {
     private var fullscreenView: View? = null
@@ -154,8 +197,7 @@ class MainActivity : ComponentActivity() {
                             missing.all { results[it] == true }
                         } else {
                             permissions.any { checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }
-                        }
-                        onResult(granted)
+                        }                        onResult(granted)
                     }
                 }
             }
@@ -354,8 +396,7 @@ private fun applyDesktopViewport(view: WebView) {
             if (!meta) {
               meta = document.createElement('meta');
               meta.setAttribute('name', 'viewport');
-              head.appendChild(meta);
-            }
+              head.appendChild(meta);            }
             if (meta.getAttribute('content') !== target) meta.setAttribute('content', target);
           }
           applyDesktopViewport();
@@ -555,8 +596,7 @@ private fun AetheronBrowser(context: Context) {
                 }
                 IconButton(onClick = { openHome() }) { Icon(Icons.Default.Add, "New tab", tint = Muted) }
                 IconButton(onClick = { showTabs = true }) {
-                    Icon(Icons.Default.Tab, "Tabs", tint = Muted)
-                }
+                    Icon(Icons.Default.Tab, "Tabs", tint = Muted)                }
                 Text(tabCount.toString(), color = Muted, fontSize = 13.sp)
             }
             HorizontalDivider(color = Line)
@@ -686,10 +726,17 @@ private fun AetheronBrowser(context: Context) {
                                 settings.cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
                                 tag = settings.userAgentString
                                 applySiteMode(this, desktop)
+                                var googleSignInHandoffPromptShown = false
                                 webViewClient = object : WebViewClient() {
                                     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
                                         loading = true
-                                        url?.let { address = it; currentUrl = it }
+                                        url?.let {
+                                            address = it
+                                            currentUrl = it
+                                            if (!Uri.parse(it).host.orEmpty().equals("accounts.google.com", true)) {
+                                                googleSignInHandoffPromptShown = false
+                                            }
+                                        }
                                         canBack = view.canGoBack(); canForward = view.canGoForward()
                                     }
                                     override fun onPageFinished(view: WebView, url: String?) {
@@ -702,6 +749,13 @@ private fun AetheronBrowser(context: Context) {
                                     }
                                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                                         val uri = request.url
+                                        if (uri.host.equals("accounts.google.com", true)) {
+                                            if (!googleSignInHandoffPromptShown) {
+                                                googleSignInHandoffPromptShown = true
+                                                offerSecureGoogleSignInHandoff(context, view.url)
+                                            }
+                                            return true
+                                        }
                                         if (uri.scheme.equals("http", true) || uri.scheme.equals("https", true)) return false
                                         return openExternalUri(context, uri)
                                     }
@@ -709,6 +763,13 @@ private fun AetheronBrowser(context: Context) {
                                     @Deprecated("Deprecated in Android")
                                     override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                                         val uri = Uri.parse(url)
+                                        if (uri.host.equals("accounts.google.com", true)) {
+                                            if (!googleSignInHandoffPromptShown) {
+                                                googleSignInHandoffPromptShown = true
+                                                offerSecureGoogleSignInHandoff(context, view.url ?: "https://chatgpt.com/")
+                                            }
+                                            return true
+                                        }
                                         if (uri.scheme.equals("http", true) || uri.scheme.equals("https", true)) return false
                                         return openExternalUri(context, uri)
                                     }
@@ -734,8 +795,7 @@ private fun AetheronBrowser(context: Context) {
                                     }
                                     override fun onPermissionRequestCanceled(request: PermissionRequest) {
                                         (context as? MainActivity)?.cancelWebPermissionRequest(request)
-                                    }
-                                    override fun onGeolocationPermissionsShowPrompt(
+                                    }                                    override fun onGeolocationPermissionsShowPrompt(
                                         origin: String,
                                         callback: GeolocationPermissions.Callback
                                     ) {
@@ -935,8 +995,7 @@ private fun HomeScreen(
                     Spacer(Modifier.width(22.dp))
                     Icon(Icons.Default.KeyboardCommandKey, null, tint = Green, modifier = Modifier.size(19.dp))
                     Spacer(Modifier.width(7.dp))
-                    Text("Search or enter a URL", color = Muted, fontSize = 13.sp)
-                }
+                    Text("Search or enter a URL", color = Muted, fontSize = 13.sp)                }
                 Spacer(Modifier.height(76.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
