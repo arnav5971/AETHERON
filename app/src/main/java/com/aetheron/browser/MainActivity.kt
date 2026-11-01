@@ -142,13 +142,39 @@ private fun applySiteMode(view: WebView, desktopMode: Boolean) {
     val chromeLikeMobileUa = originalMobileUa
         .replace("; wv)", ")")
         .replace("Version/4.0 ", "")
-        .replace("Mobile Safari", "Mobile Safari")
-    view.settings.userAgentString =
-        if (desktopMode) DESKTOP_USER_AGENT else chromeLikeMobileUa
+    view.settings.userAgentString = if (desktopMode) DESKTOP_USER_AGENT else chromeLikeMobileUa
     // Keep viewport-meta support enabled in both modes so responsive mobile sites
     // can honor width=device-width; only desktop mode zooms out to the wide layout.
     view.settings.useWideViewPort = true
     view.settings.loadWithOverviewMode = desktopMode
+}
+
+private fun openExternalUri(context: Context, uri: Uri): Boolean {
+    val scheme = uri.scheme?.lowercase() ?: return true
+    if (scheme == "http" || scheme == "https") return false
+    return try {
+        val intent = if (scheme == "intent") {
+            Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME).apply {
+                component = null
+                selector = null
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        } else {
+            Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        if (intent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(intent)
+        } else {
+            val fallback = intent.getStringExtra("browser_fallback_url")
+            if (!fallback.isNullOrBlank() && BrowserAddress.isWebUrl(fallback)) {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(fallback)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } else Toast.makeText(context, "No app can open this link", Toast.LENGTH_SHORT).show()
+        }
+        true
+    } catch (_: Exception) {
+        Toast.makeText(context, "Unable to open this link", Toast.LENGTH_SHORT).show()
+        true
+    }
 }
 
 private data class SavedPage(val title: String, val url: String)
@@ -199,8 +225,7 @@ private fun AetheronBrowser(context: Context) {
         val target = BrowserAddress.resolve(raw)
         address = target
         currentUrl = target
-        page = "Web"
-        webView?.loadUrl(target)
+        if (page == "Web") webView?.loadUrl(target) else page = "Web"
     }
     fun addHistory(url: String, title: String) {
         if (!BrowserAddress.isWebUrl(url)) return
@@ -218,7 +243,24 @@ private fun AetheronBrowser(context: Context) {
         (context as? MainActivity)?.hideVideoFullscreen()
         isVideoFullscreen = false
     }
-    BackHandler(page == "Web" && canBack && !isVideoFullscreen) { webView?.goBack() }
+    BackHandler(page == "Web" && !isVideoFullscreen) {
+        if (webView?.canGoBack() == true) webView?.goBack()
+        else { page = "Home"; loading = false }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            webView?.let { view ->
+                view.stopLoading()
+                view.webChromeClient = null
+                view.webViewClient = WebViewClient()
+                (view.parent as? ViewGroup)?.removeView(view)
+                view.removeAllViews()
+                view.destroy()
+            }
+            webView = null
+        }
+    }
 
     Surface(Modifier.fillMaxSize(), color = Color.White) {
         Column(Modifier.fillMaxSize()) {
@@ -339,7 +381,7 @@ private fun AetheronBrowser(context: Context) {
                     AndroidView(
                         modifier = Modifier.fillMaxSize(),
                         factory = { ctx ->
-                            WebView(ctx).apply {
+                            (webView ?: WebView(ctx).apply {
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true
                                 settings.loadsImagesAutomatically = true
@@ -356,6 +398,8 @@ private fun AetheronBrowser(context: Context) {
                                 settings.safeBrowsingEnabled = true
                                 settings.javaScriptCanOpenWindowsAutomatically = false
                                 settings.setSupportMultipleWindows(false)
+                                settings.databaseEnabled = true
+                                settings.cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
                                 tag = settings.userAgentString
                                 applySiteMode(this, desktop)
                                 webViewClient = object : WebViewClient() {
@@ -371,8 +415,18 @@ private fun AetheronBrowser(context: Context) {
                                         tabTitle = currentTitle
                                         canBack = view.canGoBack(); canForward = view.canGoForward()
                                     }
-                                    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
-                                        !BrowserAddress.isWebUrl(request.url.toString())
+                                    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                                        val uri = request.url
+                                        if (uri.scheme.equals("http", true) || uri.scheme.equals("https", true)) return false
+                                        return openExternalUri(context, uri)
+                                    }
+
+                                    @Deprecated("Deprecated in Android")
+                                    override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+                                        val uri = Uri.parse(url)
+                                        if (uri.scheme.equals("http", true) || uri.scheme.equals("https", true)) return false
+                                        return openExternalUri(context, uri)
+                                    }
                                     override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
                                         handler.cancel()
                                         Toast.makeText(view.context, "Secure connection blocked", Toast.LENGTH_LONG).show()
@@ -404,8 +458,12 @@ private fun AetheronBrowser(context: Context) {
                                 setDownloadListener(DownloadListener { url, userAgent, disposition, mime, _ ->
                                     try {
                                         val filename = URLUtil.guessFileName(url, disposition, mime)
-                                        val request = DownloadManager.Request(Uri.parse(url)).setMimeType(mime)
+                                        val downloadRequest = DownloadManager.Request(Uri.parse(url)).setMimeType(mime)
                                             .addRequestHeader("User-Agent", userAgent).setTitle(filename)
+                                        android.webkit.CookieManager.getInstance().getCookie(url)
+                                            ?.takeIf { it.isNotBlank() }
+                                            ?.let { downloadRequest.addRequestHeader("Cookie", it) }
+                                        val request = downloadRequest
                                             .setDescription("Downloading with AETHERON")
                                             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                                             .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
@@ -415,9 +473,9 @@ private fun AetheronBrowser(context: Context) {
                                 })
                                 webView = this
                                 if (currentUrl.isNotBlank()) loadUrl(currentUrl)
-                            }
+                            }).also { webView = it }
                         },
-                        update = { webView = it }
+                        update = { view -> if (webView !== view) webView = view }
                     )
                 } else if (page == "Home") {
                     HomeScreen(
