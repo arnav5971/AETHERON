@@ -222,11 +222,6 @@ private fun applySiteMode(view: WebView, desktopMode: Boolean) {
     if (!desktopMode) view.setInitialScale(0)
 }
 
-/**
- * Keeps YouTube's mobile player fitted to the WebView viewport.
- * Styles only the top-level YouTube document, not cross-origin player frames.
- */
-
 private fun openExternalUri(context: Context, uri: Uri): Boolean {
     val scheme = uri.scheme?.lowercase() ?: return true
     if (scheme == "http" || scheme == "https") return false
@@ -389,11 +384,17 @@ private fun AetheronBrowser(context: Context) {
             }
 
             // Browser toolbar
-            Row(
-                Modifier.fillMaxWidth().height(68.dp).padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(3.dp)
+            BoxWithConstraints(
+                Modifier.fillMaxWidth().height(68.dp).padding(horizontal = 8.dp)
             ) {
+                // On narrow phone widths, keep the address field usable by moving
+                // Home/New Tab into the overflow menu instead of squeezing it.
+                val compactToolbar = maxWidth < 400.dp
+                Row(
+                    Modifier.fillMaxSize(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(1.dp)
+                ) {
                 IconButton(onClick = { if (webView?.canGoBack() == true) webView?.goBack() else page = "Home" }, enabled = canBack || page == "Web") {
                     Icon(Icons.Default.ArrowBack, "Back", tint = Ink)
                 }
@@ -401,11 +402,13 @@ private fun AetheronBrowser(context: Context) {
                     Icon(Icons.Default.ArrowForward, "Forward", tint = if (canForward) Ink else Muted)
                 }
                 IconButton(onClick = { webView?.reload() }) { Icon(Icons.Default.Refresh, "Reload", tint = Ink) }
-                IconButton(onClick = { openHome() }) {
-                    Icon(Icons.Default.Home, "Home", tint = Ink)
+                if (!compactToolbar) {
+                    IconButton(onClick = { openHome() }) {
+                        Icon(Icons.Default.Home, "Home", tint = Ink)
+                    }
                 }
                 Row(
-                    Modifier.weight(1f).height(48.dp).background(Pale, RoundedCornerShape(22.dp))
+                    Modifier.weight(1f).height(44.dp).background(Pale, RoundedCornerShape(22.dp))
                         .padding(start = 13.dp, end = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -430,7 +433,9 @@ private fun AetheronBrowser(context: Context) {
                         Icon(Icons.Default.StarBorder, "Bookmark", tint = Muted)
                     }
                 }
-                IconButton(onClick = { openHome() }) { Icon(Icons.Default.Add, "New tab", tint = Ink) }
+                if (!compactToolbar) {
+                    IconButton(onClick = { openHome() }) { Icon(Icons.Default.Add, "New tab", tint = Ink) }
+                }
                 Box {
                     IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreHoriz, "More", tint = Ink) }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
@@ -445,6 +450,8 @@ private fun AetheronBrowser(context: Context) {
                                 }
                                 menuOpen = false
                             })
+                        DropdownMenuItem(text = { Text("Home") }, leadingIcon = { Icon(Icons.Default.Home, null) }, onClick = { openHome(); menuOpen = false })
+                        DropdownMenuItem(text = { Text("New tab") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { openHome(); menuOpen = false })
                         DropdownMenuItem(text = { Text("Bookmarks") }, leadingIcon = { Icon(Icons.Default.Bookmarks, null) }, onClick = { page = "Saved"; menuOpen = false })
                         DropdownMenuItem(text = { Text("History") }, leadingIcon = { Icon(Icons.Default.History, null) }, onClick = { page = "History"; menuOpen = false })
                         DropdownMenuItem(text = { Text("Downloads") }, leadingIcon = { Icon(Icons.Default.Download, null) }, onClick = {
@@ -455,6 +462,7 @@ private fun AetheronBrowser(context: Context) {
                         })
                         DropdownMenuItem(text = { Text("Settings") }, leadingIcon = { Icon(Icons.Default.Settings, null) }, onClick = { menuOpen = false; showAiInfo = true })
                     }
+                }
                 }
             }
             if (loading && page == "Web") {
