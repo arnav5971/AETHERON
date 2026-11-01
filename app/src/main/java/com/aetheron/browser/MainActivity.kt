@@ -190,7 +190,8 @@ private fun applyDesktopViewport(view: WebView) {
         })();
     """.trimIndent()
     val density = view.resources.displayMetrics.density.coerceAtLeast(1f)
-    val widthDp = (view.width / density).toInt().coerceAtLeast(320)
+    val measuredWidthPx = view.width.takeIf { it > 0 } ?: view.resources.displayMetrics.widthPixels
+    val widthDp = (measuredWidthPx / density).toInt().coerceAtLeast(320)
     val initialScalePercent = (widthDp * 100 / 980).coerceIn(25, 100)
     view.evaluateJavascript(script) {
         // Fit the desktop CSS canvas to the phone width once, while retaining
@@ -460,7 +461,7 @@ private fun AetheronBrowser(context: Context) {
                                 Toast.makeText(context, "Open Downloads from your device", Toast.LENGTH_SHORT).show()
                             }
                         })
-                        DropdownMenuItem(text = { Text("Settings") }, leadingIcon = { Icon(Icons.Default.Settings, null) }, onClick = { menuOpen = false; showAiInfo = true })
+                        DropdownMenuItem(text = { Text("AI assistant info") }, leadingIcon = { Icon(Icons.Default.AutoAwesome, null) }, onClick = { menuOpen = false; showAiInfo = true })
                     }
                 }
                 }
