@@ -167,6 +167,7 @@ private fun AetheronBrowser() {
                         settings.javaScriptCanOpenWindowsAutomatically = false
                         settings.setSupportMultipleWindows(false)
                         val mobileUserAgent = settings.userAgentString
+                        tag = mobileUserAgent
                         settings.useWideViewPort = desktopMode
                         settings.loadWithOverviewMode = desktopMode
                         settings.userAgentString = if (desktopMode) DESKTOP_USER_AGENT else mobileUserAgent
