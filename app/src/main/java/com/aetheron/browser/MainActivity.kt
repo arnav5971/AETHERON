@@ -168,8 +168,40 @@ private val Pale = Color(0xFFEAF1FA)
 private val Green = Color(0xFF218767)
 private const val GOOGLE_HOME = "https://www.google.com"
 /**
- * Switches the WebView request profile while keeping the desktop UA aligned
- * with the Chromium version actually shipped by this Android System WebView.
+ * Android WebView keeps the physical phone width as the CSS viewport when a
+ * site declares width=device-width. A desktop User-Agent alone therefore does
+ * not reliably activate desktop breakpoints. In desktop mode we replace only
+ * the top-level viewport meta with a conventional desktop width (980 CSS px).
+ */
+private fun applyDesktopViewport(view: WebView) {
+    val script = """
+        (function() {
+          var head = document.head || document.getElementsByTagName('head')[0];
+          if (!head) return false;
+          var meta = document.querySelector('meta[name="viewport"]');
+          if (!meta) {
+            meta = document.createElement('meta');
+            meta.setAttribute('name', 'viewport');
+            head.appendChild(meta);
+          }
+          meta.setAttribute('content',
+            'width=980, initial-scale=1.0, minimum-scale=0.25, maximum-scale=5.0, user-scalable=yes');
+          return true;
+        })();
+    """.trimIndent()
+    val density = view.resources.displayMetrics.density.coerceAtLeast(1f)
+    val widthDp = (view.width / density).toInt().coerceAtLeast(320)
+    val initialScalePercent = (widthDp * 100 / 980).coerceIn(25, 100)
+    view.evaluateJavascript(script) {
+        // Fit the desktop CSS canvas to the phone width once, while retaining
+        // pinch zoom so the user can inspect desktop-sized controls and text.
+        view.setInitialScale(initialScalePercent)
+    }
+}
+
+/**
+ * Changes only the site request profile. Mobile mode retains the site's own
+ * viewport; desktop mode gets a desktop UA plus a desktop-sized CSS viewport.
  */
 private fun applySiteMode(view: WebView, desktopMode: Boolean) {
     val originalMobileUa = (view.tag as? String) ?: view.settings.userAgentString
@@ -182,18 +214,12 @@ private fun applySiteMode(view: WebView, desktopMode: Boolean) {
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) $chromeVersion Safari/537.36"
 
     view.settings.userAgentString = if (desktopMode) desktopUa else mobileUa
-    // Request a wide desktop layout, but do not automatically shrink the whole
-    // desktop document to the phone width. That global overview scaling also
-    // shrinks desktop video players and makes them appear tiny.
     view.settings.useWideViewPort = true
     view.settings.loadWithOverviewMode = false
-
-    // Desktop pages often need pinch zoom on a phone because their CSS viewport
-    // is wider than the physical display. Keep the browser's mobile defaults
-    // unchanged when Mobile Mode is selected.
     view.settings.setSupportZoom(desktopMode)
     view.settings.builtInZoomControls = desktopMode
     view.settings.displayZoomControls = false
+    if (!desktopMode) view.setInitialScale(0)
 }
 
 /**
@@ -476,6 +502,7 @@ private fun AetheronBrowser(context: Context) {
                                     }
                                     override fun onPageFinished(view: WebView, url: String?) {
                                         loading = false
+                                        if (desktop) applyDesktopViewport(view)
                                         url?.let { address = it; currentUrl = it; addHistory(it, view.title.orEmpty()) }
                                         currentTitle = view.title.orEmpty().ifBlank { "AETHERON" }
                                         tabTitle = currentTitle
