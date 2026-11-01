@@ -197,8 +197,7 @@ class MainActivity : ComponentActivity() {
                             missing.all { results[it] == true }
                         } else {
                             permissions.any { checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }
-                        }
-                        onResult(granted)
+                        }                        onResult(granted)
                     }
                 }
             }
@@ -397,8 +396,7 @@ private fun applyDesktopViewport(view: WebView) {
             if (!meta) {
               meta = document.createElement('meta');
               meta.setAttribute('name', 'viewport');
-              head.appendChild(meta);
-            }
+              head.appendChild(meta);            }
             if (meta.getAttribute('content') !== target) meta.setAttribute('content', target);
           }
           applyDesktopViewport();
@@ -413,7 +411,8 @@ private fun applyDesktopViewport(view: WebView) {
     """.trimIndent()
     val density = view.resources.displayMetrics.density.coerceAtLeast(1f)
     val measuredWidthPx = view.width.takeIf { it > 0 } ?: view.resources.displayMetrics.widthPixels
-    val widthDp = (measuredWidthPx / density).toInt().coerceAtLeast(320)    val initialScalePercent = (widthDp * 100 / 980).coerceIn(25, 100)
+    val widthDp = (measuredWidthPx / density).toInt().coerceAtLeast(320)
+    val initialScalePercent = (widthDp * 100 / 980).coerceIn(25, 100)
     view.evaluateJavascript(script) {
         // Fit the desktop CSS canvas to the phone width once, while retaining
         // pinch zoom so the user can inspect desktop-sized controls and text.
@@ -597,8 +596,7 @@ private fun AetheronBrowser(context: Context) {
                 }
                 IconButton(onClick = { openHome() }) { Icon(Icons.Default.Add, "New tab", tint = Muted) }
                 IconButton(onClick = { showTabs = true }) {
-                    Icon(Icons.Default.Tab, "Tabs", tint = Muted)
-                }
+                    Icon(Icons.Default.Tab, "Tabs", tint = Muted)                }
                 Text(tabCount.toString(), color = Muted, fontSize = 13.sp)
             }
             HorizontalDivider(color = Line)
@@ -797,8 +795,7 @@ private fun AetheronBrowser(context: Context) {
                                     }
                                     override fun onPermissionRequestCanceled(request: PermissionRequest) {
                                         (context as? MainActivity)?.cancelWebPermissionRequest(request)
-                                    }
-                                    override fun onGeolocationPermissionsShowPrompt(
+                                    }                                    override fun onGeolocationPermissionsShowPrompt(
                                         origin: String,
                                         callback: GeolocationPermissions.Callback
                                     ) {
@@ -812,7 +809,8 @@ private fun AetheronBrowser(context: Context) {
                                         webView: WebView,
                                         filePathCallback: ValueCallback<Array<Uri>>,
                                         fileChooserParams: FileChooserParams
-                                    ): Boolean {                                        return (context as? MainActivity)?.openFileChooser(filePathCallback, fileChooserParams)
+                                    ): Boolean {
+                                        return (context as? MainActivity)?.openFileChooser(filePathCallback, fileChooserParams)
                                             ?: run { filePathCallback.onReceiveValue(null); false }
                                     }
                                     override fun onShowCustomView(
@@ -997,8 +995,7 @@ private fun HomeScreen(
                     Spacer(Modifier.width(22.dp))
                     Icon(Icons.Default.KeyboardCommandKey, null, tint = Green, modifier = Modifier.size(19.dp))
                     Spacer(Modifier.width(7.dp))
-                    Text("Search or enter a URL", color = Muted, fontSize = 13.sp)
-                }
+                    Text("Search or enter a URL", color = Muted, fontSize = 13.sp)                }
                 Spacer(Modifier.height(76.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
