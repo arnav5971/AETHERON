@@ -63,7 +63,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        WebView.setWebContentsDebugEnabled(BuildConfig.DEBUG)
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
         setContent { AetheronBrowser(this) }
     }
 
