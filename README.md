@@ -4,9 +4,12 @@
 
 AETHERON is an independently developed Android browser built with Kotlin, Jetpack Compose, Material 3 and Android System WebView.
 
-## 0.2.0 implementation
+## 0.3.0 implementation
 
 - Reference-inspired light new-tab page with tab strip, browser toolbar, centered search, quick-access tiles and bottom navigation.
+- AETHERON adaptive launcher icon (including round and monochrome variants) and Android 12+ SplashScreen with a legacy splash fallback.
+- Web video fullscreen custom-view handling with immersive system-bar hiding and Back-to-exit behavior.
+- Mobile/desktop request profile switching with responsive viewport support in mobile mode.
 - URL navigation and Google search fallback.
 - Back, forward, reload and home navigation.
 - Persistent bookmarks and browsing history stored locally on-device.
@@ -19,7 +22,7 @@ AETHERON is an independently developed Android browser built with Kotlin, Jetpac
 
 ## Not complete yet
 
-This is an early browser build, not a Chrome replacement. The visible tab counter/new-tab affordance is a UI prototype; independent multi-tab sessions and tab switching are not implemented yet. Incognito isolation, full settings, find-in-page, media fullscreen/file chooser handling and a real AI assistant backend are also not implemented. The AI panel explains the backend requirement and does not send page content anywhere. Desktop mode is best-effort; websites may ignore the request and Android System WebView is not desktop Chrome.
+This is an early browser build, not a Chrome replacement. Fullscreen support depends on each website using the standard WebView custom-view API; some embedded players may not expose a fullscreen action. The visible tab counter/new-tab affordance is a UI prototype; independent multi-tab sessions and tab switching are not implemented yet. Incognito isolation, full settings, find-in-page, media fullscreen/file chooser handling and a real AI assistant backend are also not implemented. The AI panel explains the backend requirement and does not send page content anywhere. Desktop mode is best-effort; websites may ignore the request and Android System WebView is not desktop Chrome.
 
 Features are only marked complete after implementation, automated checks and device testing support that claim.
 
