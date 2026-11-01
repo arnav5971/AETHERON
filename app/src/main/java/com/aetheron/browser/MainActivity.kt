@@ -120,6 +120,10 @@ class MainActivity : ComponentActivity() {
             .show()
     }
 
+    fun cancelWebPermissionRequest(request: PermissionRequest) {
+        if (pendingWebPermissionRequest === request) pendingWebPermissionRequest = null
+    }
+
     fun handleWebPermissionRequest(request: PermissionRequest) {
         if (!request.origin.scheme.equals("https", ignoreCase = true)) {
             request.deny()
@@ -668,9 +672,7 @@ private fun AetheronBrowser(context: Context) {
                                             ?: request.deny()
                                     }
                                     override fun onPermissionRequestCanceled(request: PermissionRequest) {
-                                        if ((context as? MainActivity)?.let { it.pendingWebPermissionRequest === request } == true) {
-                                            (context as? MainActivity)?.pendingWebPermissionRequest = null
-                                        }
+                                        (context as? MainActivity)?.cancelWebPermissionRequest(request)
                                     }
                                     override fun onGeolocationPermissionsShowPrompt(
                                         origin: String,
