@@ -191,89 +191,6 @@ private fun applySiteMode(view: WebView, desktopMode: Boolean) {
  * Keeps YouTube's mobile player fitted to the WebView viewport.
  * Styles only the top-level YouTube document, not cross-origin player frames.
  */
-/**
- * Reflows YouTube's mobile watch-page player to the actual WebView width.
- *
- * The WebView itself already fills the Compose content area. The reported
- * narrow-video symptom is therefore handled at the YouTube document's player
- * container, not by constraining the entire WebView to a 16:9 box.
- *
- * This deliberately does not rewrite YouTube iframe URLs or spoof Referer:
- * AETHERON navigates to the real YouTube site, not a locally-created embed.
- */
-private fun applyYouTubeResponsiveLayout(view: WebView, url: String, desktopMode: Boolean) {
-    if (desktopMode) return
-    val host = Uri.parse(url).host?.lowercase() ?: return
-    if (host != "youtube.com" && !host.endsWith(".youtube.com") &&
-        host != "youtu.be" && !host.endsWith(".youtu.be")) return
-
-    val script = """
-        (function() {
-          if (!document.documentElement) return;
-          var styleId = 'aetheron-youtube-responsive-v2';
-          var css = [
-            'html,body{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important;overflow-x:hidden!important;}',
-            'ytm-watch,ytm-watch-grid,ytm-player,ytm-video-player,#player-container-id,#player-container,.player-container,.html5-video-player{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;}',
-            '#player-container-id,#player-container,.player-container{aspect-ratio:16/9!important;height:auto!important;min-height:0!important;}',
-            '#player-container-id iframe,#player-container iframe,.player-container iframe,ytm-player iframe{display:block!important;width:100%!important;max-width:100%!important;aspect-ratio:16/9!important;border:0!important;}',
-            '.html5-video-container,.html5-main-video{max-width:100%!important;}',
-            '.html5-main-video,video.html5-main-video{width:100%!important;height:100%!important;object-fit:contain!important;}'
-          ].join('');
-          function apply() {
-            var viewport = document.querySelector('meta[name="viewport"]');
-            if (!viewport && document.head) {
-              viewport = document.createElement('meta');
-              viewport.name = 'viewport';
-              document.head.appendChild(viewport);
-            }
-            if (viewport) viewport.content = 'width=device-width, initial-scale=1, viewport-fit=cover';
-            if (!document.getElementById(styleId) && document.head) {
-              var style = document.createElement('style');
-              style.id = styleId;
-              style.textContent = css;
-              document.head.appendChild(style);
-            }
-
-            var width = Math.max(1, document.documentElement.clientWidth || window.innerWidth || 1);
-            var height = Math.round(width * 9 / 16);
-            var selectors = ['#player-container-id', '#player-container', '.player-container', 'ytm-player'];
-            selectors.forEach(function(selector) {
-              document.querySelectorAll(selector).forEach(function(el) {
-                el.style.setProperty('width', width + 'px', 'important');
-                el.style.setProperty('max-width', '100%', 'important');
-                el.style.setProperty('min-width', '0', 'important');
-                el.style.setProperty('box-sizing', 'border-box', 'important');
-                el.style.setProperty('aspect-ratio', '16 / 9', 'important');
-                el.style.setProperty('height', height + 'px', 'important');
-                el.style.setProperty('max-height', 'none', 'important');
-              });
-            });
-            document.querySelectorAll('#player-container-id iframe, #player-container iframe, .player-container iframe, ytm-player iframe').forEach(function(frame) {
-              frame.style.setProperty('display', 'block', 'important');
-              frame.style.setProperty('width', '100%', 'important');
-              frame.style.setProperty('height', '100%', 'important');
-              frame.style.setProperty('border', '0', 'important');
-            });
-          }
-          apply();
-          if (!window.__aetheronYoutubeResponsiveV2) {
-            window.__aetheronYoutubeResponsiveV2 = true;
-            var scheduled = false;
-            var observer = new MutationObserver(function() {
-              if (scheduled) return;
-              scheduled = true;
-              window.requestAnimationFrame(function() {
-                scheduled = false;
-                apply();
-              });
-            });
-            observer.observe(document.documentElement, {childList:true,subtree:true,attributes:true,attributeFilter:['class','style']});
-            window.addEventListener('resize', apply, {passive:true});
-          }
-        })();
-    """.trimIndent()
-    view.evaluateJavascript(script, null)
-}
 
 private fun openExternalUri(context: Context, uri: Uri): Boolean {
     val scheme = uri.scheme?.lowercase() ?: return true
@@ -516,6 +433,12 @@ private fun AetheronBrowser(context: Context) {
                         modifier = Modifier.fillMaxSize(),
                         factory = { ctx ->
                             (webView ?: WebView(ctx).apply {
+                                // Match the Compose content slot exactly; do not constrain the
+                                // browser viewport to a video aspect ratio or a fixed pixel size.
+                                layoutParams = ViewGroup.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.MATCH_PARENT
+                                )
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true
                                 settings.loadsImagesAutomatically = true
@@ -542,11 +465,7 @@ private fun AetheronBrowser(context: Context) {
                                         url?.let { address = it; currentUrl = it }
                                         canBack = view.canGoBack(); canForward = view.canGoForward()
                                     }
-                                    override fun onPageCommitVisible(view: WebView, url: String?) {
-                                        url?.let { applyYouTubeResponsiveLayout(view, it, desktop) }
-                                    }
                                     override fun onPageFinished(view: WebView, url: String?) {
-                                        url?.let { applyYouTubeResponsiveLayout(view, it, desktop) }
                                         loading = false
                                         url?.let { address = it; currentUrl = it; addHistory(it, view.title.orEmpty()) }
                                         currentTitle = view.title.orEmpty().ifBlank { "AETHERON" }
@@ -577,9 +496,6 @@ private fun AetheronBrowser(context: Context) {
                                     override fun onProgressChanged(view: WebView, newProgress: Int) {
                                         progress = newProgress
                                         loading = newProgress < 100
-                                        if (newProgress >= 80) {
-                                            applyYouTubeResponsiveLayout(view, view.url.orEmpty(), desktop)
-                                        }
                                     }
                                     override fun onReceivedTitle(view: WebView, title: String?) {
                                         currentTitle = title.orEmpty()
