@@ -116,7 +116,7 @@ private fun AetheronBrowser() {
                 Spacer(Modifier.height(15.dp))
                 Row(
                     Modifier.fillMaxWidth().background(Panel, CircleShape)
-                        .padding(start = 13.dp, end = 5.dp, vertical = 4.dp),
+                        .padding(start = 13.dp, top = 4.dp, end = 5.dp, bottom = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(Icons.Default.Search, contentDescription = null, tint = Cyan)
@@ -160,8 +160,6 @@ private fun AetheronBrowser() {
                         settings.loadsImagesAutomatically = true
                         settings.allowFileAccess = false
                         settings.allowContentAccess = false
-                        settings.javaScriptCanOpenWindowsAutomatically = false
-                        settings.setSupportMultipleWindows(false)
                         settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
                         settings.safeBrowsingEnabled = true
                         settings.javaScriptCanOpenWindowsAutomatically = false
