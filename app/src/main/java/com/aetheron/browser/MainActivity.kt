@@ -492,7 +492,7 @@ private fun HomeScreen(
 @Composable
 private fun SavedScreen(
     heading: String,
-    items: List<SavedPage>,
+    entries: List<SavedPage>,
     emptyText: String,
     onOpen: (String) -> Unit,
     onDelete: (SavedPage) -> Unit,
@@ -501,16 +501,16 @@ private fun SavedScreen(
     Column(Modifier.fillMaxSize().padding(20.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(heading, modifier = Modifier.weight(1f), color = Ink, fontSize = 25.sp, fontWeight = FontWeight.Bold)
-            if (items.isNotEmpty()) TextButton(onClick = onClear) { Text("Clear all", color = Blue) }
+            if (entries.isNotEmpty()) TextButton(onClick = onClear) { Text("Clear all", color = Blue) }
         }
         Spacer(Modifier.height(12.dp))
-        if (items.isEmpty()) {
+        if (entries.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(emptyText, color = Muted, textAlign = TextAlign.Center)
             }
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(items, key = { it.url }) { item ->
+                items(entries, key = { it.url }) { item ->
                     Row(
                         Modifier.fillMaxWidth().background(Color(0xFFF7F9FC), RoundedCornerShape(15.dp))
                             .clickable { onOpen(item.url) }.padding(14.dp),
