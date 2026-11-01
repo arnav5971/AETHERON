@@ -187,6 +187,51 @@ private fun applySiteMode(view: WebView, desktopMode: Boolean) {
     view.settings.loadWithOverviewMode = desktopMode
 }
 
+/**
+ * Keeps YouTube's mobile player fitted to the WebView viewport.
+ * Styles only the top-level YouTube document, not cross-origin player frames.
+ */
+private fun applyYouTubeResponsiveLayout(view: WebView, url: String, desktopMode: Boolean) {
+    if (desktopMode) return
+    val host = Uri.parse(url).host?.lowercase() ?: return
+    if (host != "youtube.com" && !host.endsWith(".youtube.com") &&
+        host != "youtu.be" && !host.endsWith(".youtu.be")) return
+
+    val script = """
+        (function() {
+          var id = 'aetheron-youtube-responsive';
+          var css = [
+            'html,body{max-width:100%!important;overflow-x:hidden!important;}',
+            'ytm-player,#player-container-id,#player-container,.player-container{width:100%!important;max-width:100%!important;box-sizing:border-box!important;}',
+            'ytm-player video,.html5-video-player video{max-width:100%!important;object-fit:contain!important;}',
+            'ytm-player iframe,iframe[src*="/embed/"]{max-width:100%!important;aspect-ratio:16/9!important;}'
+          ].join('');
+          function apply() {
+            var meta = document.querySelector('meta[name="viewport"]');
+            if (!meta && document.head) {
+              meta = document.createElement('meta');
+              meta.name = 'viewport';
+              document.head.appendChild(meta);
+            }
+            if (meta) meta.content = 'width=device-width, initial-scale=1, viewport-fit=cover';
+            var style = document.getElementById(id);
+            if (!style && document.head) {
+              style = document.createElement('style');
+              style.id = id;
+              style.textContent = css;
+              document.head.appendChild(style);
+            }
+          }
+          apply();
+          if (!window.__aetheronYoutubeObserver && document.documentElement) {
+            window.__aetheronYoutubeObserver = new MutationObserver(apply);
+            window.__aetheronYoutubeObserver.observe(document.documentElement, {childList:true,subtree:true});
+          }
+        })();
+    """.trimIndent()
+    view.evaluateJavascript(script, null)
+}
+
 private fun openExternalUri(context: Context, uri: Uri): Boolean {
     val scheme = uri.scheme?.lowercase() ?: return true
     if (scheme == "http" || scheme == "https") return false
@@ -455,6 +500,7 @@ private fun AetheronBrowser(context: Context) {
                                         canBack = view.canGoBack(); canForward = view.canGoForward()
                                     }
                                     override fun onPageFinished(view: WebView, url: String?) {
+                                        url?.let { applyYouTubeResponsiveLayout(view, it, desktop) }
                                         loading = false
                                         url?.let { address = it; currentUrl = it; addHistory(it, view.title.orEmpty()) }
                                         currentTitle = view.title.orEmpty().ifBlank { "AETHERON" }
