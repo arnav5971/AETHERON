@@ -310,7 +310,7 @@ private fun AetheronBrowser(context: Context) {
                 } else {
                     SavedScreen(
                         heading = if (page == "Saved") "Saved pages" else "Browsing history",
-                        items = if (page == "Saved") bookmarks else history,
+                        entries = if (page == "Saved") bookmarks else history,
                         emptyText = if (page == "Saved") "Your bookmarks will appear here." else "Pages you visit will appear here.",
                         onOpen = { navigate(it) },
                         onDelete = { item ->
