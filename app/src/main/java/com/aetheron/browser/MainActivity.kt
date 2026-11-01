@@ -256,14 +256,29 @@ private fun AetheronBrowser(context: Context) {
     var showAiInfo by remember { mutableStateOf(false) }
     var bookmarks by remember { mutableStateOf(store.read("bookmarks")) }
     var history by remember { mutableStateOf(store.read("history").take(100)) }
-    var tabCount by remember { mutableIntStateOf(1) }
+    val tabCount = 1
     var tabTitle by remember { mutableStateOf("New tab") }
 
     fun navigate(raw: String) {
         val target = BrowserAddress.resolve(raw)
         address = target
         currentUrl = target
-        if (page == "Web") webView?.loadUrl(target) else page = "Web"
+        page = "Web"
+        webView?.loadUrl(target)
+    }
+
+    fun openHome() {
+        webView?.stopLoading()
+        webView?.loadUrl("about:blank")
+        page = "Home"
+        tabTitle = "New tab"
+        address = ""
+        currentUrl = ""
+        currentTitle = "New tab"
+        loading = false
+        progress = 0
+        canBack = false
+        canForward = false
     }
     fun addHistory(url: String, title: String) {
         if (!BrowserAddress.isWebUrl(url)) return
@@ -319,15 +334,11 @@ private fun AetheronBrowser(context: Context) {
                     Spacer(Modifier.width(12.dp))
                     Text(tabTitle, color = Ink, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Spacer(Modifier.weight(1f))
-                    IconButton(onClick = { page = "Home"; tabTitle = "New tab"; address = ""; currentUrl = "" }, modifier = Modifier.size(34.dp)) {
+                    IconButton(onClick = { openHome() }, modifier = Modifier.size(34.dp)) {
                         Icon(Icons.Default.Close, "Close tab", tint = Muted)
                     }
                 }
-                IconButton(onClick = {
-                    tabCount++
-                    page = "Home"; tabTitle = "New tab"; address = ""; currentUrl = ""
-                    webView?.stopLoading()
-                }) { Icon(Icons.Default.Add, "New tab", tint = Muted) }
+                IconButton(onClick = { openHome() }) { Icon(Icons.Default.Add, "New tab", tint = Muted) }
                 IconButton(onClick = { showTabs = true }) {
                     Icon(Icons.Default.Tab, "Tabs", tint = Muted)
                 }
@@ -350,7 +361,7 @@ private fun AetheronBrowser(context: Context) {
                     Icon(Icons.Default.ArrowForward, "Forward", tint = if (canForward) Ink else Muted)
                 }
                 IconButton(onClick = { webView?.reload() }) { Icon(Icons.Default.Refresh, "Reload", tint = Ink) }
-                IconButton(onClick = { page = "Home"; tabTitle = "New tab"; address = ""; currentUrl = "" }) {
+                IconButton(onClick = { openHome() }) {
                     Icon(Icons.Default.Home, "Home", tint = Ink)
                 }
                 Row(
@@ -379,10 +390,7 @@ private fun AetheronBrowser(context: Context) {
                         Icon(Icons.Default.StarBorder, "Bookmark", tint = Muted)
                     }
                 }
-                IconButton(onClick = {
-                    tabCount++
-                    page = "Home"; tabTitle = "New tab"; address = ""; currentUrl = ""
-                }) { Icon(Icons.Default.Add, "New tab", tint = Ink) }
+                IconButton(onClick = { openHome() }) { Icon(Icons.Default.Add, "New tab", tint = Ink) }
                 Box {
                     IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreHoriz, "More", tint = Ink) }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
@@ -578,11 +586,12 @@ private fun AetheronBrowser(context: Context) {
                 Text("Current tab", fontWeight = FontWeight.SemiBold)
                 Text(tabTitle, color = Muted)
                 Spacer(Modifier.height(12.dp))
-                Text("Open tabs: $tabCount")
-                Text("Tab switching and independent page sessions are coming in the next tab-engine milestone.", fontSize = 12.sp, color = Muted)
+                Text("Open browsing session: 1")
+                Text("Independent multi-tab sessions are not available yet.", fontSize = 12.sp, color = Muted)
             } },
             confirmButton = { TextButton(onClick = {
-                tabCount++; page = "Home"; tabTitle = "New tab"; address = ""; currentUrl = ""; showTabs = false
+                openHome()
+                showTabs = false
             }) { Text("New tab") } },
             dismissButton = { TextButton(onClick = { showTabs = false }) { Text("Close") } }
         )
