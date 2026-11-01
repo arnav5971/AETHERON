@@ -79,7 +79,9 @@ private fun applySiteMode(view: WebView, desktopMode: Boolean) {
         .replace("Version/4.0 ", "")
     view.settings.userAgentString =
         if (desktopMode) DESKTOP_USER_AGENT else chromeLikeMobileUa
-    view.settings.useWideViewPort = desktopMode
+    // Keep viewport-meta support enabled in both modes so responsive mobile sites
+    // can honor width=device-width; only desktop mode zooms out to the wide layout.
+    view.settings.useWideViewPort = true
     view.settings.loadWithOverviewMode = desktopMode
 }
 
