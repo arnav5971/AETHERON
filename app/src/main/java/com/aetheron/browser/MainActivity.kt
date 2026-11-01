@@ -26,6 +26,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -60,6 +61,7 @@ class MainActivity : ComponentActivity() {
     private var previousSystemUiVisibility: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         WebView.setWebContentsDebugEnabled(BuildConfig.DEBUG)
         setContent { AetheronBrowser(this) }
