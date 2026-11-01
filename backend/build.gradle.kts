@@ -12,6 +12,7 @@ application {
 
 dependencies {
     implementation("io.ktor:ktor-server-core-jvm:3.1.1")
+    implementation("io.ktor:ktor-server-body-limit-jvm:3.1.1")
     implementation("io.ktor:ktor-server-cio-jvm:3.1.1")
     implementation("io.ktor:ktor-server-content-negotiation-jvm:3.1.1")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.1.1")
