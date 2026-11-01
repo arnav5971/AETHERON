@@ -3,6 +3,8 @@ package com.aetheron.browser
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.pm.PackageManager
 import android.app.DownloadManager
 import android.content.Context
@@ -36,6 +38,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.app.NotificationCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -71,6 +74,46 @@ class MainActivity : ComponentActivity() {
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
     private lateinit var fileChooserLauncher: ActivityResultLauncher<Intent>
     private lateinit var sitePermissionLauncher: ActivityResultLauncher<Array<String>>
+    private lateinit var notificationPermissionLauncher: ActivityResultLauncher<String>
+
+    private companion object {
+        const val APP_NOTIFICATION_CHANNEL = "aetheron_browser"
+        const val APP_NOTIFICATION_ID = 4301
+    }
+
+    private fun createAppNotificationChannel() {
+        val channel = NotificationChannel(
+            APP_NOTIFICATION_CHANNEL,
+            "AETHERON notifications",
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply { description = "Browser alerts and download updates" }
+        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+    }
+
+    fun enableAppNotifications() {
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            showNotificationsEnabled()
+        }
+    }
+
+    private fun showNotificationsEnabled() {
+        val notification = NotificationCompat.Builder(this, APP_NOTIFICATION_CHANNEL)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("AETHERON notifications enabled")
+            .setContentText("Browser notifications are allowed on this device.")
+            .setAutoCancel(true)
+            .build()
+        try {
+            getSystemService(NotificationManager::class.java).notify(APP_NOTIFICATION_ID, notification)
+            Toast.makeText(this, "Notifications are enabled", Toast.LENGTH_SHORT).show()
+        } catch (_: SecurityException) {
+            Toast.makeText(this, "Allow notifications in Android Settings", Toast.LENGTH_LONG).show()
+        }
+    }
     private var pendingRuntimePermissionResult: ((Map<String, Boolean>) -> Unit)? = null
     private var pendingWebPermissionRequest: PermissionRequest? = null
 
@@ -192,6 +235,11 @@ class MainActivity : ComponentActivity() {
             pendingRuntimePermissionResult = null
             callback?.invoke(result)
         }
+        notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) showNotificationsEnabled()
+            else Toast.makeText(this, "Notification permission was not granted", Toast.LENGTH_LONG).show()
+        }
+        createAppNotificationChannel()
         fileChooserLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val callback = fileChooserCallback
             fileChooserCallback = null
@@ -300,14 +348,23 @@ private fun applyDesktopViewport(view: WebView) {
         (function() {
           var head = document.head || document.getElementsByTagName('head')[0];
           if (!head) return false;
-          var meta = document.querySelector('meta[name="viewport"]');
-          if (!meta) {
-            meta = document.createElement('meta');
-            meta.setAttribute('name', 'viewport');
-            head.appendChild(meta);
+          var target = 'width=980, initial-scale=1.0, minimum-scale=0.25, maximum-scale=5.0, user-scalable=yes';
+          function applyDesktopViewport() {
+            var meta = document.querySelector('meta[name="viewport"]');
+            if (!meta) {
+              meta = document.createElement('meta');
+              meta.setAttribute('name', 'viewport');
+              head.appendChild(meta);
+            }
+            if (meta.getAttribute('content') !== target) meta.setAttribute('content', target);
           }
-          meta.setAttribute('content',
-            'width=980, initial-scale=1.0, minimum-scale=0.25, maximum-scale=5.0, user-scalable=yes');
+          applyDesktopViewport();
+          if (!window.__aetheronDesktopViewportObserver) {
+            window.__aetheronDesktopViewportObserver = new MutationObserver(applyDesktopViewport);
+            window.__aetheronDesktopViewportObserver.observe(head, {
+              childList: true, subtree: true, attributes: true, attributeFilter: ['content']
+            });
+          }
           return true;
         })();
     """.trimIndent()
@@ -334,7 +391,7 @@ private fun applySiteMode(view: WebView, desktopMode: Boolean) {
         .replace("; wv)", ")")
         .replace("Version/4.0 ", "")
     val desktopUa =
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) $chromeVersion Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) $chromeVersion Safari/537.36"
 
     view.settings.userAgentString = if (desktopMode) desktopUa else mobileUa
     view.settings.useWideViewPort = true
@@ -573,6 +630,10 @@ private fun AetheronBrowser(context: Context) {
                                 }
                                 menuOpen = false
                             })
+                        DropdownMenuItem(text = { Text("Enable notifications") }, leadingIcon = { Icon(Icons.Default.Notifications, null) }, onClick = {
+                            menuOpen = false
+                            (context as? MainActivity)?.enableAppNotifications()
+                        })
                         DropdownMenuItem(text = { Text("Home") }, leadingIcon = { Icon(Icons.Default.Home, null) }, onClick = { openHome(); menuOpen = false })
                         DropdownMenuItem(text = { Text("New tab") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { openHome(); menuOpen = false })
                         DropdownMenuItem(text = { Text("Bookmarks") }, leadingIcon = { Icon(Icons.Default.Bookmarks, null) }, onClick = { page = "Saved"; menuOpen = false })
