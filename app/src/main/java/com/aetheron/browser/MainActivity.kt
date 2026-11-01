@@ -33,6 +33,7 @@ import android.view.WindowInsetsController
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
@@ -67,31 +68,46 @@ import androidx.compose.ui.viewinterop.AndroidView
 import org.json.JSONArray
 import org.json.JSONObject
 
-    private fun offerSecureGoogleSignInHandoff(context: Context, currentPageUrl: String) {
-        val safePageUri = runCatching { Uri.parse(currentPageUrl) }.getOrNull()
-        if (safePageUri == null ||
-            !(safePageUri.scheme.equals("https", true) || safePageUri.scheme.equals("http", true))
-        ) {
-            Toast.makeText(context, "Google sign-in requires a supported browser", Toast.LENGTH_LONG).show()
-            return
+private fun offerSecureGoogleSignInHandoff(context: Context, currentPageUrl: String?) {
+    val safePageUri = currentPageUrl
+        ?.let { runCatching { Uri.parse(it) }.getOrNull() }
+        ?.takeIf {
+            it.scheme.equals("https", true) &&
+                !it.host.isNullOrBlank() &&
+                it.userInfo == null
         }
 
-        AlertDialog.Builder(context)
-            .setTitle("Google sign-in needs a secure browser")
-            .setMessage(
-                "Google blocks sign-in inside embedded browser windows. Open this page in Chrome or your default browser to complete sign-in. For security, that browser's signed-in session will not be copied into AETHERON."
-            )
-            .setNegativeButton("Cancel", null)
-            .setPositiveButton("Open browser") { _, _ ->
-                val intent = Intent(Intent.ACTION_VIEW, safePageUri).addCategory(Intent.CATEGORY_BROWSABLE)
+    if (safePageUri == null) {
+        Toast.makeText(context, "Open the website over HTTPS before signing in", Toast.LENGTH_LONG).show()
+        return
+    }
+
+    AlertDialog.Builder(context)
+        .setTitle("Continue Google sign-in in a secure browser")
+        .setMessage(
+            "Google does not allow sign-in inside embedded WebViews. AETHERON will open this page in your installed browser using a secure Custom Tab. The browser keeps its own cookies; AETHERON cannot copy those sign-in cookies into its WebView."
+        )
+        .setNegativeButton("Cancel", null)
+        .setPositiveButton("Continue") { _, _ ->
+            try {
+                CustomTabsIntent.Builder()
+                    .setShowTitle(true)
+                    .build()
+                    .launchUrl(context, safePageUri)
+            } catch (_: Exception) {
                 try {
-                    context.startActivity(intent)
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, safePageUri)
+                            .addCategory(Intent.CATEGORY_BROWSABLE)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
                 } catch (_: Exception) {
-                    Toast.makeText(context, "No supported browser was found", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "No supported secure browser was found", Toast.LENGTH_LONG).show()
                 }
             }
-            .show()
-    }
+        }
+        .show()
+}
 
 
 class MainActivity : ComponentActivity() {
@@ -397,8 +413,7 @@ private fun applyDesktopViewport(view: WebView) {
     """.trimIndent()
     val density = view.resources.displayMetrics.density.coerceAtLeast(1f)
     val measuredWidthPx = view.width.takeIf { it > 0 } ?: view.resources.displayMetrics.widthPixels
-    val widthDp = (measuredWidthPx / density).toInt().coerceAtLeast(320)
-    val initialScalePercent = (widthDp * 100 / 980).coerceIn(25, 100)
+    val widthDp = (measuredWidthPx / density).toInt().coerceAtLeast(320)    val initialScalePercent = (widthDp * 100 / 980).coerceIn(25, 100)
     view.evaluateJavascript(script) {
         // Fit the desktop CSS canvas to the phone width once, while retaining
         // pinch zoom so the user can inspect desktop-sized controls and text.
@@ -739,7 +754,7 @@ private fun AetheronBrowser(context: Context) {
                                         if (uri.host.equals("accounts.google.com", true)) {
                                             if (!googleSignInHandoffPromptShown) {
                                                 googleSignInHandoffPromptShown = true
-                                                offerSecureGoogleSignInHandoff(context, view.url ?: "https://chatgpt.com/")
+                                                offerSecureGoogleSignInHandoff(context, view.url)
                                             }
                                             return true
                                         }
@@ -797,8 +812,7 @@ private fun AetheronBrowser(context: Context) {
                                         webView: WebView,
                                         filePathCallback: ValueCallback<Array<Uri>>,
                                         fileChooserParams: FileChooserParams
-                                    ): Boolean {
-                                        return (context as? MainActivity)?.openFileChooser(filePathCallback, fileChooserParams)
+                                    ): Boolean {                                        return (context as? MainActivity)?.openFileChooser(filePathCallback, fileChooserParams)
                                             ?: run { filePathCallback.onReceiveValue(null); false }
                                     }
                                     override fun onShowCustomView(
