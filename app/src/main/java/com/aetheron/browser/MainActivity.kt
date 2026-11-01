@@ -91,6 +91,7 @@ class MainActivity : ComponentActivity() {
         origin: Uri,
         purpose: String,
         permissions: Array<String>,
+        requireAll: Boolean = true,
         onResult: (Boolean) -> Unit
     ) {
         val host = origin.host ?: "This website"
@@ -106,7 +107,12 @@ class MainActivity : ComponentActivity() {
                     onResult(true)
                 } else {
                     requestSiteRuntimePermissions(missing) { results ->
-                        onResult(missing.all { results[it] == true })
+                        val granted = if (requireAll) {
+                            missing.all { results[it] == true }
+                        } else {
+                            permissions.any { checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }
+                        }
+                        onResult(granted)
                     }
                 }
             }
@@ -162,7 +168,8 @@ class MainActivity : ComponentActivity() {
         showSitePermissionConsent(
             uri!!,
             "your location",
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
+            requireAll = false
         ) { allowed ->
             val granted = allowed && (
                 checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
@@ -659,6 +666,11 @@ private fun AetheronBrowser(context: Context) {
                                     override fun onPermissionRequest(request: PermissionRequest) {
                                         (context as? MainActivity)?.handleWebPermissionRequest(request)
                                             ?: request.deny()
+                                    }
+                                    override fun onPermissionRequestCanceled(request: PermissionRequest) {
+                                        if ((context as? MainActivity)?.let { it.pendingWebPermissionRequest === request } == true) {
+                                            (context as? MainActivity)?.pendingWebPermissionRequest = null
+                                        }
                                     }
                                     override fun onGeolocationPermissionsShowPrompt(
                                         origin: String,
