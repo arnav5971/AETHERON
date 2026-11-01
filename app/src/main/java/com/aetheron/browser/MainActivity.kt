@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
+import android.content.ClipData
 import android.graphics.Bitmap
 import android.net.Uri
 import android.net.http.SslError
@@ -13,6 +14,7 @@ import android.webkit.DownloadListener
 import android.webkit.SafeBrowsingResponse
 import android.webkit.SslErrorHandler
 import android.webkit.URLUtil
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -24,6 +26,8 @@ import android.view.WindowInsetsController
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -59,12 +63,44 @@ class MainActivity : ComponentActivity() {
     private var fullscreenView: View? = null
     private var fullscreenCallback: WebChromeClient.CustomViewCallback? = null
     private var previousSystemUiVisibility: Int = 0
+    private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
+    private lateinit var fileChooserLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
+        fileChooserLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val callback = fileChooserCallback
+            fileChooserCallback = null
+            if (callback != null) {
+                val data = result.data
+                val uris = if (result.resultCode == RESULT_OK && data != null) {
+                    val clip = data.clipData
+                    when {
+                        clip != null -> Array(clip.itemCount) { index -> clip.getItemAt(index).uri }
+                        data.data != null -> arrayOf(data.data!!)
+                        else -> null
+                    }
+                } else null
+                callback.onReceiveValue(uris)
+            }
+        }
         setContent { AetheronBrowser(this) }
+    }
+
+    fun openFileChooser(callback: ValueCallback<Array<Uri>>, params: WebChromeClient.FileChooserParams): Boolean {
+        fileChooserCallback?.onReceiveValue(null)
+        fileChooserCallback = callback
+        return try {
+            fileChooserLauncher.launch(params.createIntent())
+            true
+        } catch (_: Exception) {
+            fileChooserCallback = null
+            callback.onReceiveValue(null)
+            Toast.makeText(this, "Unable to open file picker", Toast.LENGTH_SHORT).show()
+            false
+        }
     }
 
     @Suppress("DEPRECATION")
@@ -117,6 +153,8 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        fileChooserCallback?.onReceiveValue(null)
+        fileChooserCallback = null
         if (fullscreenView != null) hideVideoFullscreen()
         super.onDestroy()
     }
@@ -442,6 +480,14 @@ private fun AetheronBrowser(context: Context) {
                                     }
                                     override fun onReceivedTitle(view: WebView, title: String?) {
                                         currentTitle = title.orEmpty()
+                                    }
+                                    override fun onShowFileChooser(
+                                        webView: WebView,
+                                        filePathCallback: ValueCallback<Array<Uri>>,
+                                        fileChooserParams: FileChooserParams
+                                    ): Boolean {
+                                        return (context as? MainActivity)?.openFileChooser(filePathCallback, fileChooserParams)
+                                            ?: run { filePathCallback.onReceiveValue(null); false }
                                     }
                                     override fun onShowCustomView(
                                         view: View,
