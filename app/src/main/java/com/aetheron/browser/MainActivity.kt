@@ -167,24 +167,33 @@ private val Line = Color(0xFFDCE4ED)
 private val Pale = Color(0xFFEAF1FA)
 private val Green = Color(0xFF218767)
 private const val GOOGLE_HOME = "https://www.google.com"
-private const val DESKTOP_USER_AGENT =
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-
 /**
- * Switches the WebView request profile without losing its original Android
- * WebView user agent. Mobile mode removes WebView-specific markers so sites
- * are more likely to serve their normal mobile experience.
+ * Switches the WebView request profile while keeping the desktop UA aligned
+ * with the Chromium version actually shipped by this Android System WebView.
  */
 private fun applySiteMode(view: WebView, desktopMode: Boolean) {
     val originalMobileUa = (view.tag as? String) ?: view.settings.userAgentString
-    val chromeLikeMobileUa = originalMobileUa
+    val chromeVersion = Regex("Chrome/[^ ]+").find(originalMobileUa)?.value
+        ?: "Chrome/AndroidWebView"
+    val mobileUa = originalMobileUa
         .replace("; wv)", ")")
         .replace("Version/4.0 ", "")
-    view.settings.userAgentString = if (desktopMode) DESKTOP_USER_AGENT else chromeLikeMobileUa
-    // Keep viewport-meta support enabled in both modes so responsive mobile sites
-    // can honor width=device-width; only desktop mode zooms out to the wide layout.
+    val desktopUa =
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) $chromeVersion Safari/537.36"
+
+    view.settings.userAgentString = if (desktopMode) desktopUa else mobileUa
+    // Request a wide desktop layout, but do not automatically shrink the whole
+    // desktop document to the phone width. That global overview scaling also
+    // shrinks desktop video players and makes them appear tiny.
     view.settings.useWideViewPort = true
-    view.settings.loadWithOverviewMode = desktopMode
+    view.settings.loadWithOverviewMode = false
+
+    // Desktop pages often need pinch zoom on a phone because their CSS viewport
+    // is wider than the physical display. Keep the browser's mobile defaults
+    // unchanged when Mobile Mode is selected.
+    view.settings.setSupportZoom(desktopMode)
+    view.settings.builtInZoomControls = desktopMode
+    view.settings.displayZoomControls = false
 }
 
 /**
