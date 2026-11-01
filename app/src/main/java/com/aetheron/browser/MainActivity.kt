@@ -100,6 +100,32 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun offerSecureGoogleSignInHandoff(context: Context, currentPageUrl: String) {
+        val safePageUri = runCatching { Uri.parse(currentPageUrl) }.getOrNull()
+        if (safePageUri == null ||
+            !(safePageUri.scheme.equals("https", true) || safePageUri.scheme.equals("http", true))
+        ) {
+            Toast.makeText(context, "Google sign-in requires a supported browser", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        AlertDialog.Builder(context)
+            .setTitle("Google sign-in needs a secure browser")
+            .setMessage(
+                "Google blocks sign-in inside embedded browser windows. Open this page in Chrome or your default browser to complete sign-in. For security, that browser's signed-in session will not be copied into AETHERON."
+            )
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Open browser") { _, _ ->
+                val intent = Intent(Intent.ACTION_VIEW, safePageUri).addCategory(Intent.CATEGORY_BROWSABLE)
+                try {
+                    context.startActivity(intent)
+                } catch (_: Exception) {
+                    Toast.makeText(context, "No supported browser was found", Toast.LENGTH_LONG).show()
+                }
+            }
+            .show()
+    }
+
     private fun showNotificationsEnabled() {
         val notification = NotificationCompat.Builder(this, APP_NOTIFICATION_CHANNEL)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
@@ -686,10 +712,17 @@ private fun AetheronBrowser(context: Context) {
                                 settings.cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
                                 tag = settings.userAgentString
                                 applySiteMode(this, desktop)
+                                var googleSignInHandoffPromptShown = false
                                 webViewClient = object : WebViewClient() {
                                     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
                                         loading = true
-                                        url?.let { address = it; currentUrl = it }
+                                        url?.let {
+                                            address = it
+                                            currentUrl = it
+                                            if (!Uri.parse(it).host.orEmpty().equals("accounts.google.com", true)) {
+                                                googleSignInHandoffPromptShown = false
+                                            }
+                                        }
                                         canBack = view.canGoBack(); canForward = view.canGoForward()
                                     }
                                     override fun onPageFinished(view: WebView, url: String?) {
@@ -702,6 +735,13 @@ private fun AetheronBrowser(context: Context) {
                                     }
                                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                                         val uri = request.url
+                                        if (uri.host.equals("accounts.google.com", true)) {
+                                            if (!googleSignInHandoffPromptShown) {
+                                                googleSignInHandoffPromptShown = true
+                                                offerSecureGoogleSignInHandoff(context, view.url ?: "https://chatgpt.com/")
+                                            }
+                                            return true
+                                        }
                                         if (uri.scheme.equals("http", true) || uri.scheme.equals("https", true)) return false
                                         return openExternalUri(context, uri)
                                     }
@@ -709,6 +749,13 @@ private fun AetheronBrowser(context: Context) {
                                     @Deprecated("Deprecated in Android")
                                     override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                                         val uri = Uri.parse(url)
+                                        if (uri.host.equals("accounts.google.com", true)) {
+                                            if (!googleSignInHandoffPromptShown) {
+                                                googleSignInHandoffPromptShown = true
+                                                offerSecureGoogleSignInHandoff(context, view.url ?: "https://chatgpt.com/")
+                                            }
+                                            return true
+                                        }
                                         if (uri.scheme.equals("http", true) || uri.scheme.equals("https", true)) return false
                                         return openExternalUri(context, uri)
                                     }
