@@ -17,6 +17,11 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowInsets
+import android.view.WindowInsetsController
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -50,10 +55,68 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 class MainActivity : ComponentActivity() {
+    private var fullscreenView: View? = null
+    private var fullscreenCallback: WebChromeClient.CustomViewCallback? = null
+    private var previousSystemUiVisibility: Int = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
+        WebView.setWebContentsDebugEnabled(BuildConfig.DEBUG)
         setContent { AetheronBrowser(this) }
+    }
+
+    @Suppress("DEPRECATION")
+    fun showVideoFullscreen(view: View, callback: WebChromeClient.CustomViewCallback) {
+        if (fullscreenView != null) {
+            callback.onCustomViewHidden()
+            return
+        }
+        val decor = window.decorView as ViewGroup
+        fullscreenView = view
+        fullscreenCallback = callback
+        previousSystemUiVisibility = decor.systemUiVisibility
+        (view.parent as? ViewGroup)?.removeView(view)
+        decor.addView(view, FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        ))
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            window.insetsController?.let { controller ->
+                controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                controller.systemBarsBehavior =
+                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            decor.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_FULLSCREEN or
+                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                )
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    fun hideVideoFullscreen() {
+        val view = fullscreenView ?: return
+        (view.parent as? ViewGroup)?.removeView(view)
+        fullscreenView = null
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            window.insetsController?.show(
+                WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars()
+            )
+        } else {
+            window.decorView.systemUiVisibility = previousSystemUiVisibility
+        }
+        fullscreenCallback?.onCustomViewHidden()
+        fullscreenCallback = null
+    }
+
+    override fun onDestroy() {
+        if (fullscreenView != null) hideVideoFullscreen()
+        super.onDestroy()
     }
 }
 
@@ -118,6 +181,7 @@ private fun AetheronBrowser(context: Context) {
     var canBack by remember { mutableStateOf(false) }
     var canForward by remember { mutableStateOf(false) }
     var desktop by remember { mutableStateOf(false) }
+    var isVideoFullscreen by remember { mutableStateOf(false) }
     var webView by remember { mutableStateOf<WebView?>(null) }
     var page by remember { mutableStateOf("Home") }
     var menuOpen by remember { mutableStateOf(false) }
@@ -147,7 +211,11 @@ private fun AetheronBrowser(context: Context) {
         Toast.makeText(context, "Saved to bookmarks", Toast.LENGTH_SHORT).show()
     }
 
-    BackHandler(page == "Web" && canBack) { webView?.goBack() }
+    BackHandler(enabled = isVideoFullscreen) {
+        (context as? MainActivity)?.hideVideoFullscreen()
+        isVideoFullscreen = false
+    }
+    BackHandler(page == "Web" && canBack && !isVideoFullscreen) { webView?.goBack() }
 
     Surface(Modifier.fillMaxSize(), color = Color.White) {
         Column(Modifier.fillMaxSize()) {
@@ -301,8 +369,24 @@ private fun AetheronBrowser(context: Context) {
                                     }
                                 }
                                 webChromeClient = object : WebChromeClient() {
-                                    override fun onProgressChanged(view: WebView, newProgress: Int) { progress = newProgress; loading = newProgress < 100 }
-                                    override fun onReceivedTitle(view: WebView, title: String?) { currentTitle = title.orEmpty() }
+                                    override fun onProgressChanged(view: WebView, newProgress: Int) {
+                                        progress = newProgress
+                                        loading = newProgress < 100
+                                    }
+                                    override fun onReceivedTitle(view: WebView, title: String?) {
+                                        currentTitle = title.orEmpty()
+                                    }
+                                    override fun onShowCustomView(
+                                        view: View,
+                                        callback: CustomViewCallback
+                                    ) {
+                                        (context as? MainActivity)?.showVideoFullscreen(view, callback)
+                                        isVideoFullscreen = true
+                                    }
+                                    override fun onHideCustomView() {
+                                        (context as? MainActivity)?.hideVideoFullscreen()
+                                        isVideoFullscreen = false
+                                    }
                                 }
                                 setDownloadListener(DownloadListener { url, userAgent, disposition, mime, _ ->
                                     try {
