@@ -4,6 +4,14 @@ import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.webkit.SafeBrowsingResponse
+import android.webkit.SslErrorHandler
+import android.webkit.DownloadListener
+import android.app.DownloadManager
+import android.content.Context
+import android.net.Uri
+import android.os.Environment
+import android.webkit.URLUtil
+import android.widget.Toast
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -47,6 +55,7 @@ private val Panel = Color(0xFF111B2D)
 private val Cyan = Color(0xFF55DDF5)
 private val Muted = Color(0xFF91A4BC)
 private val TextPrimary = Color(0xFFEAF5FF)
+private const val DESKTOP_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -58,6 +67,7 @@ private fun AetheronBrowser() {
     var backEnabled by remember { mutableStateOf(false) }
     var forwardEnabled by remember { mutableStateOf(false) }
     var browser by remember { mutableStateOf<WebView?>(null) }
+    var desktopMode by remember { mutableStateOf(false) }
 
     fun go(input: String) {
         val target = BrowserAddress.resolve(input)
@@ -66,6 +76,16 @@ private fun AetheronBrowser() {
     }
 
     BackHandler(backEnabled) { browser?.goBack() }
+    LaunchedEffect(desktopMode) {
+        browser?.let { view ->
+            val originalAgent = view.tag as? String ?: view.settings.userAgentString
+            if (view.tag == null) view.tag = originalAgent
+            view.settings.userAgentString = if (desktopMode) DESKTOP_USER_AGENT else (view.tag as String)
+            view.settings.useWideViewPort = desktopMode
+            view.settings.loadWithOverviewMode = desktopMode
+            view.reload()
+        }
+    }
 
     Surface(Modifier.fillMaxSize(), color = Night) {
         Column(Modifier.fillMaxSize()) {
@@ -144,6 +164,12 @@ private fun AetheronBrowser() {
                         settings.setSupportMultipleWindows(false)
                         settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
                         settings.safeBrowsingEnabled = true
+                        settings.javaScriptCanOpenWindowsAutomatically = false
+                        settings.setSupportMultipleWindows(false)
+                        val mobileUserAgent = settings.userAgentString
+                        settings.useWideViewPort = desktopMode
+                        settings.loadWithOverviewMode = desktopMode
+                        settings.userAgentString = if (desktopMode) DESKTOP_USER_AGENT else mobileUserAgent
                         webViewClient = object : WebViewClient() {
                             override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
                                 super.onPageStarted(view, url, favicon)
@@ -162,6 +188,10 @@ private fun AetheronBrowser() {
                             }
                             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
                                 !BrowserAddress.isWebUrl(request.url.toString())
+                            override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: android.net.http.SslError) {
+                                handler.cancel()
+                                Toast.makeText(view.context, "Secure connection blocked", Toast.LENGTH_LONG).show()
+                            }
                             override fun onSafeBrowsingHit(
                                 view: WebView, request: WebResourceRequest, threatType: Int,
                                 callback: SafeBrowsingResponse
@@ -169,6 +199,22 @@ private fun AetheronBrowser() {
                                 callback.backToSafety(true)
                             }
                         }
+                        setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
+                            try {
+                                val filename = URLUtil.guessFileName(url, contentDisposition, mimeType)
+                                val request = DownloadManager.Request(Uri.parse(url))
+                                    .setMimeType(mimeType)
+                                    .addRequestHeader("User-Agent", userAgent)
+                                    .setTitle(filename)
+                                    .setDescription("Downloading with AETHERON")
+                                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
+                                (view.context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
+                                Toast.makeText(view.context, "Download started", Toast.LENGTH_SHORT).show()
+                            } catch (_: Exception) {
+                                Toast.makeText(view.context, "Could not start download", Toast.LENGTH_LONG).show()
+                            }
+                        })
                         webChromeClient = object : WebChromeClient() {
                             override fun onProgressChanged(view: WebView, newProgress: Int) {
                                 progress = newProgress
@@ -207,7 +253,9 @@ private fun AetheronBrowser() {
                     IconButton(onClick = { browser?.reload() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Reload", tint = TextPrimary)
                     }
-                    Text("1 TAB", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    TextButton(onClick = { desktopMode = !desktopMode }) {
+                        Text(if (desktopMode) "DESKTOP" else "MOBILE", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
