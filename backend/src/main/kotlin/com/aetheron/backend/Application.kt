@@ -8,7 +8,6 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.cio.CIO
 import io.ktor.server.plugins.PayloadTooLargeException
 import io.ktor.server.plugins.bodylimit.RequestBodyLimit
-import io.ktor.server.plugins.bodylimit.bodyLimit
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.contentType
 import io.ktor.server.request.receive
