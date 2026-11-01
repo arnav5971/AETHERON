@@ -67,6 +67,33 @@ import androidx.compose.ui.viewinterop.AndroidView
 import org.json.JSONArray
 import org.json.JSONObject
 
+    private fun offerSecureGoogleSignInHandoff(context: Context, currentPageUrl: String) {
+        val safePageUri = runCatching { Uri.parse(currentPageUrl) }.getOrNull()
+        if (safePageUri == null ||
+            !(safePageUri.scheme.equals("https", true) || safePageUri.scheme.equals("http", true))
+        ) {
+            Toast.makeText(context, "Google sign-in requires a supported browser", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        AlertDialog.Builder(context)
+            .setTitle("Google sign-in needs a secure browser")
+            .setMessage(
+                "Google blocks sign-in inside embedded browser windows. Open this page in Chrome or your default browser to complete sign-in. For security, that browser's signed-in session will not be copied into AETHERON."
+            )
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Open browser") { _, _ ->
+                val intent = Intent(Intent.ACTION_VIEW, safePageUri).addCategory(Intent.CATEGORY_BROWSABLE)
+                try {
+                    context.startActivity(intent)
+                } catch (_: Exception) {
+                    Toast.makeText(context, "No supported browser was found", Toast.LENGTH_LONG).show()
+                }
+            }
+            .show()
+    }
+
+
 class MainActivity : ComponentActivity() {
     private var fullscreenView: View? = null
     private var fullscreenCallback: WebChromeClient.CustomViewCallback? = null
@@ -98,32 +125,6 @@ class MainActivity : ComponentActivity() {
         } else {
             showNotificationsEnabled()
         }
-    }
-
-    private fun offerSecureGoogleSignInHandoff(context: Context, currentPageUrl: String) {
-        val safePageUri = runCatching { Uri.parse(currentPageUrl) }.getOrNull()
-        if (safePageUri == null ||
-            !(safePageUri.scheme.equals("https", true) || safePageUri.scheme.equals("http", true))
-        ) {
-            Toast.makeText(context, "Google sign-in requires a supported browser", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        AlertDialog.Builder(context)
-            .setTitle("Google sign-in needs a secure browser")
-            .setMessage(
-                "Google blocks sign-in inside embedded browser windows. Open this page in Chrome or your default browser to complete sign-in. For security, that browser's signed-in session will not be copied into AETHERON."
-            )
-            .setNegativeButton("Cancel", null)
-            .setPositiveButton("Open browser") { _, _ ->
-                val intent = Intent(Intent.ACTION_VIEW, safePageUri).addCategory(Intent.CATEGORY_BROWSABLE)
-                try {
-                    context.startActivity(intent)
-                } catch (_: Exception) {
-                    Toast.makeText(context, "No supported browser was found", Toast.LENGTH_LONG).show()
-                }
-            }
-            .show()
     }
 
     private fun showNotificationsEnabled() {
