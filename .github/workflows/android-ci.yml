@@ -1,4 +1,4 @@
-name: Android CI
+name: AETHERON CI
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   verify:
-    name: Build and unit tests
+    name: Backend tests and Android build
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -28,11 +28,14 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
-      - name: Run unit tests
-        run: gradle testDebugUnitTest
+      - name: Test backend
+        run: gradle :backend:test
+
+      - name: Run Android unit tests
+        run: gradle :app:testDebugUnitTest
 
       - name: Assemble debug APK
-        run: gradle assembleDebug
+        run: gradle :app:assembleDebug
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
