@@ -64,6 +64,24 @@ private val Line = Color(0xFFDCE4ED)
 private val Pale = Color(0xFFEAF1FA)
 private val Green = Color(0xFF218767)
 private const val GOOGLE_HOME = "https://www.google.com"
+private const val DESKTOP_USER_AGENT =
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+
+/**
+ * Switches the WebView request profile without losing its original Android
+ * WebView user agent. Mobile mode removes WebView-specific markers so sites
+ * are more likely to serve their normal mobile experience.
+ */
+private fun applySiteMode(view: WebView, desktopMode: Boolean) {
+    val originalMobileUa = (view.tag as? String) ?: view.settings.userAgentString
+    val chromeLikeMobileUa = originalMobileUa
+        .replace("; wv)", ")")
+        .replace("Version/4.0 ", "")
+    view.settings.userAgentString =
+        if (desktopMode) DESKTOP_USER_AGENT else chromeLikeMobileUa
+    view.settings.useWideViewPort = desktopMode
+    view.settings.loadWithOverviewMode = desktopMode
+}
 
 private data class SavedPage(val title: String, val url: String)
 
@@ -214,14 +232,15 @@ private fun AetheronBrowser(context: Context) {
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         DropdownMenuItem(text = { Text(if (desktop) "Switch to mobile site" else "Request desktop site") },
                             leadingIcon = { Icon(Icons.Default.DesktopWindows, null) },
-                            onClick = { desktop = !desktop; webView?.let {
-                                val mobile = it.tag as? String ?: it.settings.userAgentString
-                                if (it.tag == null) it.tag = mobile
-                                it.settings.userAgentString = if (desktop) mobile else "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36"
-                                it.settings.useWideViewPort = !desktop
-                                it.settings.loadWithOverviewMode = !desktop
-                                it.reload()
-                            }; menuOpen = false })
+                            onClick = {
+                                val nextMode = !desktop
+                                desktop = nextMode
+                                webView?.let { view ->
+                                    applySiteMode(view, nextMode)
+                                    view.reload()
+                                }
+                                menuOpen = false
+                            })
                         DropdownMenuItem(text = { Text("Bookmarks") }, leadingIcon = { Icon(Icons.Default.Bookmarks, null) }, onClick = { page = "Saved"; menuOpen = false })
                         DropdownMenuItem(text = { Text("History") }, leadingIcon = { Icon(Icons.Default.History, null) }, onClick = { page = "History"; menuOpen = false })
                         DropdownMenuItem(text = { Text("Downloads") }, leadingIcon = { Icon(Icons.Default.Download, null) }, onClick = {
@@ -255,6 +274,7 @@ private fun AetheronBrowser(context: Context) {
                                 settings.javaScriptCanOpenWindowsAutomatically = false
                                 settings.setSupportMultipleWindows(false)
                                 tag = settings.userAgentString
+                                applySiteMode(this, desktop)
                                 webViewClient = object : WebViewClient() {
                                     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
                                         loading = true
