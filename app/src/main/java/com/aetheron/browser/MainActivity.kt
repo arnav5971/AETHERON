@@ -209,10 +209,10 @@ private fun AetheronBrowser() {
                                     .setDescription("Downloading with AETHERON")
                                     .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                                     .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
-                                (view.context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
-                                Toast.makeText(view.context, "Download started", Toast.LENGTH_SHORT).show()
+                                (ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
+                                Toast.makeText(ctx, "Download started", Toast.LENGTH_SHORT).show()
                             } catch (_: Exception) {
-                                Toast.makeText(view.context, "Could not start download", Toast.LENGTH_LONG).show()
+                                Toast.makeText(ctx, "Could not start download", Toast.LENGTH_LONG).show()
                             }
                         })
                         webChromeClient = object : WebChromeClient() {
