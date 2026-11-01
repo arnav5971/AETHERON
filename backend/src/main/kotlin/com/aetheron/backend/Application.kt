@@ -48,18 +48,31 @@ private data class WindowCounter(val windowStart: Long, val count: AtomicInteger
 class IpRateLimiter(
     private val maxRequests: Int = 20,
     private val windowMillis: Long = 60_000,
-    private val clock: () -> Long = System::currentTimeMillis
+    private val clock: () -> Long = System::currentTimeMillis,
+    private val maxKeys: Int = 10_000
 ) {
     private val counters = ConcurrentHashMap<String, WindowCounter>()
+    private val calls = AtomicInteger(0)
 
     fun allow(key: String): Boolean {
+        if (key.isBlank()) return false
         val now = clock()
+        if (calls.incrementAndGet() % 128 == 0) {
+            counters.entries.removeIf { now - it.value.windowStart >= windowMillis }
+        }
+        val existing = counters[key]
+        if (existing == null && counters.size >= maxKeys) {
+            counters.entries.removeIf { now - it.value.windowStart >= windowMillis }
+            if (counters.size >= maxKeys) return false
+        }
         val counter = counters.compute(key) { _, old ->
             if (old == null || now - old.windowStart >= windowMillis) WindowCounter(now, AtomicInteger(1))
             else old.apply { count.incrementAndGet() }
         } ?: return false
         return counter.count.get() <= maxRequests
     }
+
+    internal fun trackedKeyCount(): Int = counters.size
 }
 
 private val json = Json { ignoreUnknownKeys = true }
@@ -81,9 +94,9 @@ fun Application.module() {
             call.respond(HealthResponse("ok", "aetheron-api", "0.1.0"))
         }
         post("/api/v1/ai/chat") {
-            val remote = call.request.headers["X-Forwarded-For"]
-                ?.substringBefore(",")?.trim()
-                ?: call.request.local.remoteHost
+            // Never trust client-supplied forwarding headers. Only enable proxy
+            // address extraction after configuring a trusted-proxy allowlist.
+            val remote = call.request.local.remoteHost
             if (!limiter.allow(remote)) {
                 call.respond(HttpStatusCode.TooManyRequests, ApiError("Too many requests. Try again shortly.", "rate_limited"))
                 return@post
