@@ -142,6 +142,7 @@ private fun applySiteMode(view: WebView, desktopMode: Boolean) {
     val chromeLikeMobileUa = originalMobileUa
         .replace("; wv)", ")")
         .replace("Version/4.0 ", "")
+        .replace("Mobile Safari", "Mobile Safari")
     view.settings.userAgentString =
         if (desktopMode) DESKTOP_USER_AGENT else chromeLikeMobileUa
     // Keep viewport-meta support enabled in both modes so responsive mobile sites
@@ -221,6 +222,7 @@ private fun AetheronBrowser(context: Context) {
 
     Surface(Modifier.fillMaxSize(), color = Color.White) {
         Column(Modifier.fillMaxSize()) {
+            if (page != "Web") {
             // Tab strip
             Row(
                 Modifier.fillMaxWidth().height(56.dp).background(Color(0xFFF7F9FC))
@@ -252,6 +254,8 @@ private fun AetheronBrowser(context: Context) {
                 Text(tabCount.toString(), color = Muted, fontSize = 13.sp)
             }
             HorizontalDivider(color = Line)
+
+            }
 
             // Browser toolbar
             Row(
@@ -339,6 +343,13 @@ private fun AetheronBrowser(context: Context) {
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true
                                 settings.loadsImagesAutomatically = true
+                                settings.useWideViewPort = true
+                                settings.loadWithOverviewMode = false
+                                settings.textZoom = 100
+                                settings.setSupportZoom(false)
+                                settings.builtInZoomControls = false
+                                settings.displayZoomControls = false
+                                settings.mediaPlaybackRequiresUserGesture = false
                                 settings.allowFileAccess = false
                                 settings.allowContentAccess = false
                                 settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
@@ -436,6 +447,7 @@ private fun AetheronBrowser(context: Context) {
                 }
             }
 
+            if (page != "Web") {
             // Bottom navigation
             HorizontalDivider(color = Line)
             Row(
@@ -449,6 +461,7 @@ private fun AetheronBrowser(context: Context) {
                 BottomItem("History", Icons.Default.History, page == "History") { page = "History" }
                 BottomItem("AI", Icons.Default.AutoAwesome, false) { showAiInfo = true }
                 BottomItem("Tabs", Icons.Default.Tab, false, badge = tabCount.toString()) { showTabs = true }
+            }
             }
         }
     }
