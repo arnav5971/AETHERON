@@ -8,7 +8,7 @@ class IpRateLimiterTest {
     @Test
     fun permitsOnlyConfiguredRequestsInWindow() {
         var now = 1_000L
-        val limiter = IpRateLimiter(maxRequests = 2, windowMillis = 60_000) { now }
+        val limiter = IpRateLimiter(maxRequests = 2, windowMillis = 60_000, clock = { now })
         assertTrue(limiter.allow("device-a"))
         assertTrue(limiter.allow("device-a"))
         assertFalse(limiter.allow("device-a"))
