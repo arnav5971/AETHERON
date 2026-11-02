@@ -801,7 +801,7 @@ private fun AetheronBrowser(context: Context) {
                 } else if (page == "Resources") {
                     DeveloperResourcesScreen(
                         onBack = { page = "Home" },
-                        onOpenCategory = { anchor -> navigate("https://github.com/ripienaar/free-for-dev#$anchor") }
+                        onOpenService = { url -> navigate(url) }
                     )
                 } else {
                     SavedScreen(
