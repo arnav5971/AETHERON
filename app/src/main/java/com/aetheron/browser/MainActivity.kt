@@ -792,7 +792,13 @@ private fun AetheronBrowser(context: Context) {
                         onSearch = { navigate(it) },
                         onQuick = { navigate(it) },
                         onBookmarks = { page = "Saved" },
-                        onAi = { showAiInfo = true }
+                        onAi = { showAiInfo = true },
+                        onResources = { page = "Resources" }
+                    )
+                } else if (page == "Resources") {
+                    DeveloperResourcesScreen(
+                        onBack = { page = "Home" },
+                        onOpenCategory = { anchor -> navigate("https://github.com/ripienaar/free-for-dev#$anchor") }
                     )
                 } else {
                     SavedScreen(
@@ -867,7 +873,8 @@ private fun HomeScreen(
     onSearch: (String) -> Unit,
     onQuick: (String) -> Unit,
     onBookmarks: () -> Unit,
-    onAi: () -> Unit
+    onAi: () -> Unit,
+    onResources: () -> Unit
 ) {
     var query by remember { mutableStateOf("") }
     val quick = listOf(
@@ -973,6 +980,11 @@ private fun HomeScreen(
                     Icon(Icons.Default.AutoAwesome, null, tint = Blue)
                     Spacer(Modifier.width(8.dp))
                     Text("Explore AETHERON AI", color = Blue)
+                }
+                TextButton(onClick = onResources, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.Code, null, tint = Blue)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Free Developer Resources", color = Blue)
                 }
             }
         }
