@@ -111,7 +111,7 @@ class MainActivity : ComponentActivity() {
             .build()
         try {
             getSystemService(NotificationManager::class.java).notify(APP_NOTIFICATION_ID, notification)
-            Toast.makeText(this, "Notifications are enabled", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "AETHERON app notification sent", Toast.LENGTH_SHORT).show()
         } catch (_: SecurityException) {
             Toast.makeText(this, "Allow notifications in Android Settings", Toast.LENGTH_LONG).show()
         }
@@ -347,7 +347,8 @@ private const val GOOGLE_AI_MODE = "https://www.google.com/ai"
 internal fun shouldOpenInTrustedBrowser(rawUrl: String): Boolean = runCatching {
     val uri = java.net.URI(rawUrl)
     val host = uri.host?.lowercase()?.trimEnd('.') ?: return@runCatching false
-    uri.scheme.equals("https", ignoreCase = true) && host in setOf(
+    uri.scheme.equals("https", ignoreCase = true) &&
+        (uri.port == -1 || uri.port == 443) && host in setOf(
         "google.com",
         "www.google.com",
         "accounts.google.com",
@@ -553,6 +554,9 @@ private fun AetheronBrowser(context: Context) {
     BackHandler(enabled = page == "Resources" && !isVideoFullscreen) {
         page = "Home"
     }
+    BackHandler(enabled = (page == "Saved" || page == "History") && !isVideoFullscreen) {
+        page = "Home"
+    }
     BackHandler(page == "Web" && !isVideoFullscreen) {
         if (webView?.canGoBack() == true) webView?.goBack()
         else { page = "Home"; loading = false }
@@ -617,13 +621,20 @@ private fun AetheronBrowser(context: Context) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(1.dp)
                 ) {
-                IconButton(onClick = { if (webView?.canGoBack() == true) webView?.goBack() else page = "Home" }, enabled = canBack || page == "Web") {
+                IconButton(
+                    onClick = {
+                        if (page != "Web") page = "Home"
+                        else if (webView?.canGoBack() == true) webView?.goBack()
+                        else page = "Home"
+                    },
+                    enabled = page != "Home" || (page == "Web" && canBack)
+                ) {
                     Icon(Icons.Default.ArrowBack, "Back", tint = Ink)
                 }
-                IconButton(onClick = { webView?.goForward() }, enabled = canForward) {
+                IconButton(onClick = { webView?.goForward() }, enabled = page == "Web" && canForward) {
                     Icon(Icons.Default.ArrowForward, "Forward", tint = if (canForward) Ink else Muted)
                 }
-                IconButton(onClick = { webView?.reload() }) { Icon(Icons.Default.Refresh, "Reload", tint = Ink) }
+                IconButton(onClick = { webView?.reload() }, enabled = page == "Web") { Icon(Icons.Default.Refresh, "Reload", tint = if (page == "Web") Ink else Muted) }
                 if (!compactToolbar) {
                     IconButton(onClick = { openHome() }) {
                         Icon(Icons.Default.Home, "Home", tint = Ink)
@@ -649,7 +660,7 @@ private fun AetheronBrowser(context: Context) {
                             }
                         }
                     )
-                    IconButton(onClick = { addBookmark() }, modifier = Modifier.size(38.dp)) {
+                    IconButton(onClick = { addBookmark() }, enabled = page == "Web" && BrowserAddress.isWebUrl(currentUrl), modifier = Modifier.size(38.dp)) {
                         Icon(Icons.Default.StarBorder, "Bookmark", tint = Muted)
                     }
                 }
@@ -670,7 +681,7 @@ private fun AetheronBrowser(context: Context) {
                                 }
                                 menuOpen = false
                             })
-                        DropdownMenuItem(text = { Text("Enable notifications") }, leadingIcon = { Icon(Icons.Default.Notifications, null) }, onClick = {
+                        DropdownMenuItem(text = { Text("Test app notifications") }, leadingIcon = { Icon(Icons.Default.Notifications, null) }, onClick = {
                             menuOpen = false
                             (context as? MainActivity)?.enableAppNotifications()
                         })
