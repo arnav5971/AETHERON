@@ -773,13 +773,26 @@ private fun AetheronBrowser(context: Context) {
                                 webViewClient = object : WebViewClient() {
                                     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
                                         loading = true
-                                        url?.let { address = it; currentUrl = it }
+                                        url?.takeIf { BrowserAddress.isWebUrl(it) }?.let {
+                                            address = it
+                                            currentUrl = it
+                                        }
                                         canBack = view.canGoBack(); canForward = view.canGoForward()
                                     }
                                     override fun onPageFinished(view: WebView, url: String?) {
                                         loading = false
+                                        if (url == "about:blank") {
+                                            progress = 0
+                                            canBack = false
+                                            canForward = false
+                                            return
+                                        }
                                         if (desktop) applyDesktopViewport(view)
-                                        url?.let { address = it; currentUrl = it; addHistory(it, view.title.orEmpty()) }
+                                        url?.takeIf { BrowserAddress.isWebUrl(it) }?.let {
+                                            address = it
+                                            currentUrl = it
+                                            addHistory(it, view.title.orEmpty())
+                                        }
                                         currentTitle = view.title.orEmpty().ifBlank { "AETHERON" }
                                         tabTitle = currentTitle
                                         canBack = view.canGoBack(); canForward = view.canGoForward()
