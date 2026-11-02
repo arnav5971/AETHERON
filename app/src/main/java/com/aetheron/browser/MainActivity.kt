@@ -73,6 +73,8 @@ import org.json.JSONObject
 class MainActivity : ComponentActivity() {
     private var fullscreenView: View? = null
     private var fullscreenCallback: WebChromeClient.CustomViewCallback? = null
+    private var activeWebView: WebView? = null
+    private val popupWebViews = mutableSetOf<WebView>()
     private var previousSystemUiVisibility: Int = 0
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
     private lateinit var fileChooserLauncher: ActivityResultLauncher<Intent>
@@ -323,9 +325,33 @@ class MainActivity : ComponentActivity() {
         fullscreenCallback = null
     }
 
+    override fun onPause() {
+        activeWebView?.onPause()
+        super.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        activeWebView?.onResume()
+    }
+
+    fun destroyPopupWebView(popup: WebView) {
+        if (!popupWebViews.remove(popup)) return
+        popup.stopLoading()
+        popup.webChromeClient = null
+        popup.webViewClient = null
+        (popup.parent as? ViewGroup)?.removeView(popup)
+        popup.removeAllViews()
+        popup.destroy()
+    }
+
     override fun onDestroy() {
         fileChooserCallback?.onReceiveValue(null)
         fileChooserCallback = null
+        pendingWebPermissionRequest?.let { runCatching { it.deny() } }
+        pendingWebPermissionRequest = null
+        pendingRuntimePermissionResult = null
+        popupWebViews.toList().forEach(::destroyPopupWebView)
         if (fullscreenView != null) hideVideoFullscreen()
         super.onDestroy()
     }
@@ -566,6 +592,9 @@ private fun AetheronBrowser(context: Context) {
     DisposableEffect(Unit) {
         onDispose {
             webView?.let { view ->
+                if ((context as? MainActivity)?.activeWebView === view) {
+                    (context as? MainActivity)?.activeWebView = null
+                }
                 view.stopLoading()
                 view.webChromeClient = null
                 view.webViewClient = WebViewClient()
@@ -801,6 +830,7 @@ private fun AetheronBrowser(context: Context) {
                                             settings.javaScriptCanOpenWindowsAutomatically = false
                                             settings.setSupportMultipleWindows(false)
                                         }
+                                        (context as? MainActivity)?.popupWebViews?.add(popup)
                                         var routed = false
                                         fun routePopup(url: String, popupView: WebView) {
                                             if (routed || url == "about:blank") return
@@ -814,9 +844,7 @@ private fun AetheronBrowser(context: Context) {
                                                 else -> openExternalUri(context, Uri.parse(url))
                                             }
                                             popupView.post {
-                                                popupView.stopLoading()
-                                                (popupView.parent as? ViewGroup)?.removeView(popupView)
-                                                popupView.destroy()
+                                                (context as? MainActivity)?.destroyPopupWebView(popupView)
                                             }
                                         }
                                         popup.webViewClient = object : WebViewClient() {
@@ -860,12 +888,38 @@ private fun AetheronBrowser(context: Context) {
                                         return true
                                     }
 
+                                    override fun onCloseWindow(window: WebView) {
+                                        (context as? MainActivity)?.destroyPopupWebView(window)
+                                    }
+
                                     override fun onProgressChanged(view: WebView, newProgress: Int) {
                                         progress = newProgress
                                         loading = newProgress < 100
                                     }
                                     override fun onReceivedTitle(view: WebView, title: String?) {
                                         currentTitle = title.orEmpty()
+                                    }
+                                    override fun onRenderProcessGone(
+                                        view: WebView,
+                                        detail: android.webkit.RenderProcessGoneDetail
+                                    ): Boolean {
+                                        if (webView === view) {
+                                            webView = null
+                                            (context as? MainActivity)?.activeWebView = null
+                                            page = "Home"
+                                            loading = false
+                                            progress = 0
+                                            canBack = false
+                                            canForward = false
+                                            Toast.makeText(
+                                                context,
+                                                "A web page stopped unexpectedly. Please reopen it.",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+                                        (view.parent as? ViewGroup)?.removeView(view)
+                                        view.destroy()
+                                        return true
                                     }
                                     override fun onPermissionRequest(request: PermissionRequest) {
                                         (context as? MainActivity)?.handleWebPermissionRequest(request)
@@ -921,6 +975,7 @@ private fun AetheronBrowser(context: Context) {
                                     } catch (_: Exception) { Toast.makeText(ctx, "Download failed to start", Toast.LENGTH_LONG).show() }
                                 })
                                 webView = this
+                                (ctx as? MainActivity)?.activeWebView = this
                                 if (currentUrl.isNotBlank()) loadUrl(currentUrl)
                             }).also { webView = it }
                         },
