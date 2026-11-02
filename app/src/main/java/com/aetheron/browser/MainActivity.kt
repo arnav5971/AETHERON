@@ -872,6 +872,15 @@ private fun AetheronBrowser(context: Context) {
                                             ) {
                                                 if (!url.isNullOrBlank()) routePopup(url, popupView)
                                             }
+
+                                            override fun onRenderProcessGone(
+                                                popupView: WebView,
+                                                detail: android.webkit.RenderProcessGoneDetail
+                                            ): Boolean {
+                                                (context as? MainActivity)?.destroyPopupWebView(popupView)
+                                                    ?: run { popupView.destroy() }
+                                                return true
+                                            }
                                         }
                                         // Attach the temporary WebView so Chromium can complete
                                         // the popup handshake; it is removed as soon as its URL
@@ -879,8 +888,11 @@ private fun AetheronBrowser(context: Context) {
                                         view.addView(popup)
                                         val transport = resultMsg.obj as? WebView.WebViewTransport
                                             ?: run {
-                                                view.removeView(popup)
-                                                popup.destroy()
+                                                (context as? MainActivity)?.destroyPopupWebView(popup)
+                                                    ?: run {
+                                                        view.removeView(popup)
+                                                        popup.destroy()
+                                                    }
                                                 return false
                                             }
                                         transport.webView = popup
