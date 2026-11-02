@@ -30,18 +30,21 @@ fun DeveloperResourcesScreen(
     onOpenCategory: (String) -> Unit
 ) {
     val categories = listOf(
-        ResourceCategory("Cloud providers", "Always-free cloud infrastructure and compute offers", "major-cloud-providers-always-free-limits"),
-        ResourceCategory("APIs, data & machine learning", "Free API tiers, datasets and ML services", "apis-data-and-ml"),
-        ResourceCategory("Generative AI", "AI platforms, model access and developer APIs", "generative-ai"),
+        ResourceCategory("Major cloud providers", "Always-free cloud infrastructure and compute offers", "major-cloud-providers"),
+        ResourceCategory("Cloud management", "Tools for managing cloud infrastructure", "cloud-management-solutions"),
+        ResourceCategory("Analytics & statistics", "Analytics, events and usage statistics", "analytics-events-and-statistics"),
+        ResourceCategory("APIs, data & ML", "Free API tiers, datasets and machine learning services", "apis-data-and-ml"),
+        ResourceCategory("Artifact repositories", "Package and build artifact repositories", "artifact-repos"),
         ResourceCategory("Backend as a Service", "Hosted backend, authentication and app services", "baas"),
-        ResourceCategory("Databases", "Managed SQL, NoSQL and data storage services", "managed-data-services"),
+        ResourceCategory("Generative AI", "AI platforms, models and developer APIs", "generative-ai"),
         ResourceCategory("CI & CD", "Build, test and deploy projects", "ci-and-cd"),
-        ResourceCategory("Hosting & PaaS", "Deploy websites, apps and backend services", "paas"),
+        ResourceCategory("Managed databases", "Managed SQL, NoSQL and data storage services", "managed-data-services"),
+        ResourceCategory("DNS & domains", "Domain registration and DNS tools", "dns"),
+        ResourceCategory("Monitoring", "Logs, uptime, metrics and product analytics", "monitoring"),
+        ResourceCategory("Security & PKI", "Certificates and security tools", "security-and-pki"),
+        ResourceCategory("Source code repositories", "Code hosting and repository services", "source-code-repos"),
         ResourceCategory("Web hosting", "Static and dynamic website hosting", "web-hosting"),
-        ResourceCategory("Domains & DNS", "Domain, DNS and network tools", "domain"),
-        ResourceCategory("Security & identity", "Authentication, certificates and security tools", "security-and-pki"),
-        ResourceCategory("Monitoring & analytics", "Logs, uptime, metrics and product analytics", "monitoring"),
-        ResourceCategory("Developer tools", "Code editors, repositories and team utilities", "ide-and-code-editing")
+        ResourceCategory("Other free resources", "More free services and developer resources", "other-free-resources")
     )
     var query by remember { mutableStateOf("") }
     val filtered = categories.filter {
