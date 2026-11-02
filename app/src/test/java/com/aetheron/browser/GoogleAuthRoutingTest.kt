@@ -31,5 +31,15 @@ class GoogleAuthRoutingTest {
     fun deceptiveGoogleSubdomainsAreNotTrusted() {
         assertFalse(shouldOpenInTrustedBrowser("https://google.com.evil.example/"))
         assertFalse(shouldOpenInTrustedBrowser("https://accounts.google.com.evil.example/"))
+        assertFalse(shouldOpenInTrustedBrowser("https://google.com@evil.example/"))
+        assertFalse(shouldOpenInTrustedBrowser("https://google.com.evil/"))
+    }
+
+    @Test
+    fun trustedHostMatchingIsCaseInsensitiveAndRejectsMalformedUrls() {
+        assertTrue(shouldOpenInTrustedBrowser("HTTPS://ACCOUNTS.GOOGLE.COM/signin"))
+        assertFalse(shouldOpenInTrustedBrowser("https://accounts.google.com:invalid/signin"))
+        assertFalse(shouldOpenInTrustedBrowser("javascript://accounts.google.com/"))
+        assertFalse(shouldOpenInTrustedBrowser("https:///accounts.google.com/"))
     }
 }
