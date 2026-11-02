@@ -9,7 +9,9 @@
         <item name="android:windowBackground">#FFFFFF</item>
     </style>
 
-    <style name="Theme.Aetheron.Splash" parent="Theme.Aetheron">
-        <item name="android:windowBackground">@drawable/splash_background</item>
+    <style name="Theme.Aetheron.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/aetheron_splash_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_aetheron_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Aetheron</item>
     </style>
 </resources>

@@ -5,5 +5,5 @@
         android:width="112dp"
         android:height="112dp"
         android:gravity="center"
-        android:drawable="@drawable/ic_aetheron_mark" />
+        android:drawable="@drawable/ic_aetheron_launcher_foreground" />
 </layer-list>
