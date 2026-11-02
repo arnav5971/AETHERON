@@ -31,4 +31,15 @@ class BrowserAddressTest {
         assertFalse(BrowserAddress.isWebUrl("file:///sdcard/test.html"))
         assertFalse(BrowserAddress.isWebUrl("javascript:alert(1)"))
     }
+
+    @Test fun localhostAndExplicitHttpAreHandled() {
+        assertEquals("https://localhost:3000", BrowserAddress.resolve("localhost:3000"))
+        assertEquals("http://localhost:8080", BrowserAddress.resolve("http://localhost:8080"))
+    }
+
+    @Test fun unsupportedSchemesBecomeSearchQueries() {
+        val resolved = BrowserAddress.resolve("javascript:alert(1)")
+        assertTrue(resolved.startsWith("https://www.google.com/search?q="))
+        assertFalse(resolved.startsWith("javascript:", ignoreCase = true))
+    }
 }
