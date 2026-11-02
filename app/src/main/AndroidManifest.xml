@@ -14,7 +14,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="AETHERON"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Aetheron.Splash"
+        android:theme="@style/Theme.Aetheron"
         android:usesCleartextTraffic="false">
         <activity
             android:name=".MainActivity"

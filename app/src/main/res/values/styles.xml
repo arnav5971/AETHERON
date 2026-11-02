@@ -8,8 +8,4 @@
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowBackground">#FFFFFF</item>
     </style>
-
-    <style name="Theme.Aetheron.Splash" parent="Theme.Aetheron">
-        <item name="android:windowBackground">@drawable/splash_background</item>
-    </style>
 </resources>

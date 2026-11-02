@@ -39,8 +39,18 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.app.NotificationCompat
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -61,6 +71,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -234,7 +246,6 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
         super.onCreate(savedInstanceState)
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
         sitePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
@@ -263,11 +274,14 @@ class MainActivity : ComponentActivity() {
                 callback.onReceiveValue(uris)
             }
         }
-        window.statusBarColor = android.graphics.Color.rgb(9, 7, 37)
+        // Keep the reference home artwork clean: hide the Android status bar
+        // (clock, signal and battery indicators) on the app's main surfaces.
         @Suppress("DEPRECATION")
-        window.decorView.systemUiVisibility =
-            window.decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_FULLSCREEN.inv()
-        setContent { AetheronBrowser(this) }
+        window.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
+        )
+        setContent { AetheronAppRoot(this) }
     }
 
     fun openFileChooser(callback: ValueCallback<Array<Uri>>, params: WebChromeClient.FileChooserParams): Boolean {
@@ -1125,183 +1139,96 @@ private fun HomeScreen(
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
-    val shortcuts = listOf(
-        Triple("Google", Icons.Default.Search, "https://www.google.com"),
-        Triple("YouTube", Icons.Default.PlayArrow, "https://m.youtube.com"),
-        Triple("GitHub", Icons.Default.Code, "https://github.com"),
-        Triple("Wikipedia", Icons.Default.MenuBook, "https://www.wikipedia.org")
-    )
-    val tools = listOf(
-        Triple("Bookmarks", Icons.Default.Bookmarks, onBookmarks),
-        Triple("History", Icons.Default.History, onHistory),
-        Triple("Downloads", Icons.Default.Download, onDownloads),
-        Triple("Settings", Icons.Default.Settings, onSettings)
-    )
-    val violet = Color(0xFFB34DFF)
-    val cyan = Color(0xFF16CFFF)
-    val panel = Color(0xCC101A3B)
-    val background = androidx.compose.ui.graphics.Brush.verticalGradient(
-        listOf(Color(0xFF090725), Color(0xFF080D2B), Color(0xFF03091D))
-    )
 
-    BoxWithConstraints(Modifier.fillMaxSize().background(background)) {
-        // Soft nebula lights behind the content.
-        Box(Modifier.offset(x = maxWidth * .60f, y = maxHeight * .04f).size(210.dp)
-            .background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0x553B36FF), Color.Transparent)), CircleShape))
-        Box(Modifier.offset(x = (-85).dp, y = maxHeight * .30f).size(220.dp)
-            .background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0x554C16B8), Color.Transparent)), CircleShape))
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize().background(Color(0xFF172A83))
+    ) {
+        // The supplied artwork already contains the exact logo, illustrations,
+        // cards, labels and navigation artwork. Keep it intact; only add hit targets.
+        Image(
+            painter = painterResource(id = R.drawable.aetheron_home_art),
+            contentDescription = "AETHERON home screen",
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.fillMaxSize()
+        )
 
-        Column(
-            Modifier.fillMaxSize().padding(horizontal = 16.dp)
-                .verticalScroll(ScrollState(0)),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(Modifier.height(10.dp))
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("AETHERON", color = Color(0xFFFFD34D), fontWeight = FontWeight.Bold, fontSize = 13.sp, letterSpacing = 1.2.sp)
-                Spacer(Modifier.weight(1f))
-                Surface(
-                    color = Color(0xFF33250C),
-                    shape = RoundedCornerShape(50.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFC928))
-                ) {
-                    Row(Modifier.padding(horizontal = 13.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.WorkspacePremium, null, tint = Color(0xFFFFD34D), modifier = Modifier.size(17.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("AETHERON", color = Color(0xFFFFD34D), fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                    }
-                }
-            }
-            Spacer(Modifier.height(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                Box(
-                    Modifier.size(74.dp).background(
-                        androidx.compose.ui.graphics.Brush.linearGradient(listOf(violet, Color(0xFF536BFF), cyan)),
-                        RoundedCornerShape(24.dp)
-                    ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Public, null, tint = Color.White, modifier = Modifier.size(48.dp))
-                }
-                Spacer(Modifier.width(13.dp))
-                Column {
-                    Text("AETHERON", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
-                    Text("Browse  •  Explore  •  Create", color = Color(0xFFD7D9FF), fontSize = 12.sp)
-                }
-            }
-            Spacer(Modifier.height(22.dp))
-            Row(
-                Modifier.fillMaxWidth().height(58.dp)
-                    .background(
-                        androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFF26144C), Color(0xFF102A54), Color(0xFF082D50))),
-                        RoundedCornerShape(30.dp)
-                    )
-                    .then(Modifier)
-                    .clickable { showSearch = true }
-                    .padding(horizontal = 17.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("G", color = Color(0xFF4C9AFF), fontSize = 25.sp, fontWeight = FontWeight.Black)
-                Spacer(Modifier.width(15.dp))
-                Text("Search or enter URL...", color = Color(0xFFB8B9E7), fontSize = 14.sp, modifier = Modifier.weight(1f))
-                Icon(Icons.Default.ArrowForward, "Search", tint = Color.White, modifier = Modifier.size(23.dp))
-            }
-            Spacer(Modifier.height(20.dp))
-            // Four responsive quick-site shortcuts.
-                Spacer(Modifier.height(18.dp))
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Bolt, null, tint = Color(0xFFFFC928), modifier = Modifier.size(23.dp))
-                Spacer(Modifier.width(7.dp))
-                Text("Your browser", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.weight(1f))
-                Text("Quick actions", color = Color(0xFFAD8BFF), fontSize = 11.sp)
-            }
-            Spacer(Modifier.height(10.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                tools.forEachIndexed { index, item ->
-                    Column(
-                        Modifier.weight(1f).height(104.dp)
-                            .background(listOf(Color(0xFF1D1B55), Color(0xFF102D43), Color(0xFF332047), Color(0xFF24194B))[index], RoundedCornerShape(18.dp))
-                            .clickable { item.third() }.padding(7.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(item.second, null, tint = listOf(violet, Color(0xFF32E6A2), Color(0xFFFFB52E), violet)[index], modifier = Modifier.size(27.dp))
-                        Spacer(Modifier.height(7.dp))
-                        Text(item.first, color = Color.White, fontSize = 10.sp, textAlign = TextAlign.Center, lineHeight = 12.sp)
-                    }
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-            Row(
-                Modifier.fillMaxWidth().background(Color(0xFF0C1934), RoundedCornerShape(18.dp)).padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.VerifiedUser, null, tint = Color(0xFF25E6A0), modifier = Modifier.size(25.dp))
-                Spacer(Modifier.width(9.dp))
-                Column(Modifier.weight(1f).clickable(onClick = onPrivacy)) {
-                    Text("Privacy controls", color = Color(0xFF25E6A0), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("Manage site permissions", color = Color(0xFFC5CBE5), fontSize = 9.sp)
-                }
-                Box(Modifier.width(1.dp).height(30.dp).background(Color(0xFF465078)))
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.clickable(onClick = onSettings)) {
-                    Text("Browser", color = Color(0xFF25E6A0), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("Tools & settings", color = Color(0xFFC5CBE5), fontSize = 9.sp)
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-            Row(
-                Modifier.fillMaxWidth().height(58.dp).background(Color(0xDD0B1030), RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Home, null, tint = Color(0xFFC17AFF), modifier = Modifier.size(22.dp))
-                    Text("Home", color = Color(0xFFC17AFF), fontSize = 10.sp)
-                }
-                Column(Modifier.clickable(onClick = onBookmarks), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Bookmarks, null, tint = Color(0xFF9EA7D4), modifier = Modifier.size(22.dp))
-                    Text("Saved", color = Color(0xFF9EA7D4), fontSize = 10.sp)
-                }
-                Column(Modifier.clickable(onClick = onDownloads), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Download, null, tint = Color(0xFF9EA7D4), modifier = Modifier.size(22.dp))
-                    Text("Downloads", color = Color(0xFF9EA7D4), fontSize = 10.sp)
-                }
-                Column(Modifier.clickable(onClick = onSettings), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.MoreVert, null, tint = Color(0xFF9EA7D4), modifier = Modifier.size(22.dp))
-                    Text("More", color = Color(0xFF9EA7D4), fontSize = 10.sp)
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-        }
+        fun hit(x: Float, y: Float, w: Float, h: Float, action: () -> Unit): Modifier =
+            Modifier.offset(x = maxWidth * x, y = maxHeight * y)
+                .size(width = maxWidth * w, height = maxHeight * h)
+                // Invisible hit areas must not draw the default dark ripple/splash.
+                .clickable(
+                    interactionSource = null,
+                    indication = null,
+                    onClick = action
+                )
+
+        // Search field, microphone and visual scan control.
+        Box(hit(0.035f, 0.252f, 0.70f, 0.065f) { showSearch = true })
+        Box(hit(0.755f, 0.252f, 0.085f, 0.065f) { showSearch = true })
+        Box(hit(0.855f, 0.252f, 0.105f, 0.065f) { showSearch = true })
+
+        // Quick websites.
+        Box(hit(0.075f, 0.382f, 0.18f, 0.105f) { onQuick("https://www.google.com") })
+        Box(hit(0.295f, 0.382f, 0.18f, 0.105f) { onQuick("https://m.youtube.com") })
+        Box(hit(0.525f, 0.382f, 0.18f, 0.105f) { onQuick("https://github.com") })
+        Box(hit(0.745f, 0.382f, 0.18f, 0.105f) { onQuick("https://www.wikipedia.org") })
+
+        // Quick actions.
+        Box(hit(0.075f, 0.552f, 0.19f, 0.105f, onBookmarks))
+        Box(hit(0.295f, 0.552f, 0.19f, 0.105f, onHistory))
+        Box(hit(0.515f, 0.552f, 0.19f, 0.105f, onDownloads))
+        Box(hit(0.735f, 0.552f, 0.19f, 0.105f, onSettings))
+
+        // Feature cards.
+        Box(hit(0.035f, 0.682f, 0.465f, 0.145f, onPrivacy))
+        Box(hit(0.525f, 0.682f, 0.44f, 0.145f, onSettings))
+
+        // Bottom navigation labels/icons are part of the reference artwork.
+        Box(hit(0.025f, 0.895f, 0.17f, 0.095f) { })
+        Box(hit(0.205f, 0.895f, 0.19f, 0.095f, onBookmarks))
+        Box(hit(0.405f, 0.895f, 0.19f, 0.095f, onHistory))
+        Box(hit(0.605f, 0.895f, 0.19f, 0.095f, onDownloads))
+        Box(hit(0.805f, 0.895f, 0.17f, 0.095f, onSettings))
     }
 
     if (showSearch) {
         AlertDialog(
             onDismissRequest = { showSearch = false },
-            title = { Text("Search or enter URL") },
+            title = { Text("Search or enter a website") },
             text = {
                 BasicTextField(
                     value = query,
                     onValueChange = { query = it },
                     singleLine = true,
-                    textStyle = TextStyle(color = Ink, fontSize = 16.sp),
-                    modifier = Modifier.fillMaxWidth().background(Color(0xFF171E34), RoundedCornerShape(10.dp)).padding(12.dp),
+                    textStyle = TextStyle(color = Color(0xFF17105F), fontSize = 16.sp),
+                    modifier = Modifier.fillMaxWidth()
+                        .background(Color(0xFFF0EEFA), RoundedCornerShape(12.dp))
+                        .padding(12.dp),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                     keyboardActions = KeyboardActions(onGo = {
-                        if (query.isNotBlank()) { showSearch = false; onSearch(query) }
+                        if (query.isNotBlank()) {
+                            showSearch = false
+                            onSearch(query)
+                        }
                     })
                 )
             },
             confirmButton = {
-                TextButton(onClick = { if (query.isNotBlank()) { showSearch = false; onSearch(query) } }) { Text("Go") }
+                TextButton(onClick = {
+                    if (query.isNotBlank()) {
+                        showSearch = false
+                        onSearch(query)
+                    }
+                }) { Text("Go", color = Color(0xFF8B2BFA)) }
             },
-            dismissButton = { TextButton(onClick = { showSearch = false }) { Text("Cancel") } }
+            dismissButton = {
+                TextButton(onClick = { showSearch = false }) {
+                    Text("Cancel", color = Color(0xFF6567A6))
+                }
+            }
         )
     }
 }
-
 @Composable
 private fun AetheronFeatureScreen(
     page: String,
@@ -1498,4 +1425,9 @@ private fun BottomItem(label: String, icon: androidx.compose.ui.graphics.vector.
         Spacer(Modifier.height(4.dp))
         Text(label, color = if (selected) Blue else Muted, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
     }
+}
+
+@Composable
+private fun AetheronAppRoot(activity: MainActivity) {
+    AetheronBrowser(activity)
 }
