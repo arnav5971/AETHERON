@@ -1060,6 +1060,25 @@ private fun AetheronBrowser(context: Context) {
                             } catch (_: Exception) {
                                 Toast.makeText(context, "Downloads screen is unavailable on this device", Toast.LENGTH_SHORT).show()
                             }
+                        },
+                        onClearBrowsingData = {
+                            history = emptyList()
+                            store.write("history", emptyList())
+                            webView?.apply { clearHistory(); clearCache(true) }
+                            android.webkit.CookieManager.getInstance().removeAllCookies(null)
+                            android.webkit.CookieManager.getInstance().flush()
+                            android.webkit.WebStorage.getInstance().deleteAllData()
+                            Toast.makeText(context, "History, cache and website data cleared. Bookmarks and downloads were kept.", Toast.LENGTH_LONG).show()
+                        },
+                        onOpenAppPermissions = {
+                            try {
+                                context.startActivity(Intent(
+                                    android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.parse("package:${context.packageName}")
+                                ))
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "Unable to open Android app settings", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     )
                 } else if (page == "Resources") {
@@ -1391,7 +1410,9 @@ private fun AetheronFeatureScreen(
     searchEngine: String = "Google",
     onDesktopModeChange: (Boolean) -> Unit = {},
     onSearchEngineChange: (String) -> Unit = {},
-    onOpenDownloads: () -> Unit = {}
+    onOpenDownloads: () -> Unit = {},
+    onClearBrowsingData: () -> Unit = {},
+    onOpenAppPermissions: () -> Unit = {}
 ) {
     val title = when (page) { "AI" -> "AETHERON AI"; "Privacy" -> "Privacy & Security"; else -> "Settings" }
     val subtitle = when (page) {
@@ -1400,6 +1421,7 @@ private fun AetheronFeatureScreen(
         else -> "Make AETHERON work the way you like."
     }
     var showSearchPicker by remember { mutableStateOf(false) }
+    var showClearDataConfirm by remember { mutableStateOf(false) }
     val items = when (page) {
         "AI" -> listOf(
             Triple("Summarize a page", "Turn long pages into key points", Icons.Default.AutoAwesome),
@@ -1445,13 +1467,18 @@ private fun AetheronFeatureScreen(
                 val isDesktop = page == "Settings" && item.first == "Desktop site"
                 val isSearch = page == "Settings" && item.first == "Search engine"
                 val isDownloads = page == "Settings" && item.first == "Downloads"
+                val isClearData = page == "Privacy" && item.first == "Clear browsing data"
+                val isSitePermissions = page == "Privacy" && item.first == "Site permissions"
+                val isAction = isDesktop || isSearch || isDownloads || isClearData || isSitePermissions
                 Row(
                     Modifier.fillMaxWidth().background(Color(0xFF151B2F), RoundedCornerShape(16.dp))
-                        .then(if (isDesktop || isSearch || isDownloads) Modifier.clickable {
+                        .then(if (isAction) Modifier.clickable {
                             when {
                                 isDesktop -> onDesktopModeChange(!desktopMode)
                                 isSearch -> showSearchPicker = true
                                 isDownloads -> onOpenDownloads()
+                                isClearData -> showClearDataConfirm = true
+                                isSitePermissions -> onOpenAppPermissions()
                             }
                         } else Modifier).padding(15.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -1465,10 +1492,26 @@ private fun AetheronFeatureScreen(
                         Text(item.second, color = Muted, fontSize = 11.sp, lineHeight = 15.sp)
                     }
                     if (isDesktop) Switch(checked = desktopMode, onCheckedChange = onDesktopModeChange)
-                    else if (isSearch || isDownloads) Icon(Icons.Default.ChevronRight, null, tint = Muted)
+                    else if (isSearch || isDownloads || isClearData || isSitePermissions) Icon(Icons.Default.ChevronRight, null, tint = Muted)
                 }
             }
         }
+    }
+    if (showClearDataConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearDataConfirm = false },
+            title = { Text("Clear browsing data?") },
+            text = { Text("This clears saved browsing history, cached files, cookies and website storage. Bookmarks and downloaded files are kept.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showClearDataConfirm = false
+                    onClearBrowsingData()
+                }) { Text("Clear data") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearDataConfirm = false }) { Text("Cancel") }
+            }
+        )
     }
     if (showSearchPicker) {
         AlertDialog(
