@@ -1136,7 +1136,7 @@ private fun HomeScreen(
 
         Column(
             Modifier.fillMaxSize().padding(horizontal = 16.dp)
-                .verticalScroll(androidx.compose.runtime.rememberScrollState()),
+                .verticalScroll(androidx.compose.runtime.androidx.compose.foundation.ScrollState(0)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(10.dp))
