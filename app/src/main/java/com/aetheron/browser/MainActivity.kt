@@ -657,7 +657,7 @@ private fun AetheronBrowser(context: Context) {
                         else if (webView?.canGoBack() == true) webView?.goBack()
                         else page = "Home"
                     },
-                    enabled = page != "Home" || (page == "Web" && canBack)
+                    enabled = page != "Home"
                 ) {
                     Icon(Icons.Default.ArrowBack, "Back", tint = Ink)
                 }
