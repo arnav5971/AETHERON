@@ -615,7 +615,7 @@ private fun AetheronBrowser(context: Context) {
 
     Surface(Modifier.fillMaxSize(), color = Color(0xFF090C18)) {
         Column(Modifier.fillMaxSize()) {
-            if (page != "Web") {
+            if (page != "Web" && page != "Home") {
             // Tab strip
             Row(
                 Modifier.fillMaxWidth().height(56.dp).background(Color(0xFF101529))
@@ -646,6 +646,7 @@ private fun AetheronBrowser(context: Context) {
 
             }
 
+            if (page != "Home") {
             // Browser toolbar
             BoxWithConstraints(
                 Modifier.fillMaxWidth().height(68.dp).padding(horizontal = 8.dp)
@@ -739,6 +740,7 @@ private fun AetheronBrowser(context: Context) {
                     }
                 }
                 }
+            }
             }
             if (loading && page == "Web") {
                 LinearProgressIndicator(progress = { progress / 100f }, modifier = Modifier.fillMaxWidth().height(2.dp), color = Blue, trackColor = Pale)
@@ -1055,7 +1057,7 @@ private fun AetheronBrowser(context: Context) {
                 }
             }
 
-            if (page != "Web") {
+            if (page != "Web" && page != "Home") {
             // Bottom navigation
             HorizontalDivider(color = Line)
             Row(
@@ -1102,164 +1104,249 @@ private fun HomeScreen(
     onAi: () -> Unit,
     onResources: () -> Unit
 ) {
-    var query by remember { mutableStateOf("") }
-    val quick = listOf(
-        Triple("YouTube", "https://m.youtube.com", Icons.Default.PlayArrow),
-        Triple("Google", "https://www.google.com", Icons.Default.Search),
-        Triple("GitHub", "https://github.com", Icons.Default.Code),
-        Triple("Wikipedia", "https://www.wikipedia.org", Icons.Default.MenuBook)
+    var query by rememberSaveable { mutableStateOf("") }
+    var showSearch by remember { mutableStateOf(false) }
+    val shortcuts = listOf(
+        Triple("Google", Icons.Default.Search, "https://www.google.com"),
+        Triple("YouTube", Icons.Default.PlayArrow, "https://m.youtube.com"),
+        Triple("GitHub", Icons.Default.Code, "https://github.com"),
+        Triple("Wikipedia", Icons.Default.MenuBook, "https://www.wikipedia.org")
     )
-    val glow = androidx.compose.ui.graphics.Brush.linearGradient(
-        colors = listOf(Color(0xFF302568), Color(0xFF172747), Color(0xFF10172B))
+    val tools = listOf(
+        Triple("Developer\nTools", Icons.Default.RocketLaunch, onResources),
+        Triple("Privacy &\nSecurity", Icons.Default.Shield, onResources),
+        Triple("Downloads", Icons.Default.Download, onResources),
+        Triple("Settings", Icons.Default.Settings, onResources)
+    )
+    val violet = Color(0xFFB34DFF)
+    val cyan = Color(0xFF16CFFF)
+    val panel = Color(0xCC101A3B)
+    val background = androidx.compose.ui.graphics.Brush.verticalGradient(
+        listOf(Color(0xFF090725), Color(0xFF080D2B), Color(0xFF03091D))
     )
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 20.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(22.dp)
-    ) {
-        item {
-            Column(Modifier.fillMaxWidth().widthIn(max = 560.dp).padding(top = 2.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier.size(44.dp).background(
-                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                                listOf(Color(0xFF9B6BFF), Color(0xFF3BC8E8))
-                            ), RoundedCornerShape(15.dp)
-                        ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Public, null, tint = Color.White, modifier = Modifier.size(25.dp))
-                    }
-                    Spacer(Modifier.width(11.dp))
-                    Column {
-                        Text("AETHERON", color = Ink, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.2.sp)
-                        Text("BROWSE BEYOND", color = Muted, fontSize = 9.sp, letterSpacing = 2.sp)
-                    }
-                    Spacer(Modifier.weight(1f))
-                    Surface(color = Color(0xFF142E35), shape = RoundedCornerShape(50)) {
-                        Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(6.dp).background(Green, CircleShape))
-                            Spacer(Modifier.width(6.dp))
-                            Text("SECURE", color = Green, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                        }
+    BoxWithConstraints(Modifier.fillMaxSize().background(background)) {
+        // Soft nebula lights behind the content.
+        Box(Modifier.offset(x = maxWidth * .60f, y = maxHeight * .04f).size(210.dp)
+            .background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0x553B36FF), Color.Transparent)), CircleShape))
+        Box(Modifier.offset(x = (-85).dp, y = maxHeight * .30f).size(220.dp)
+            .background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0x554C16B8), Color.Transparent)), CircleShape))
+
+        Column(
+            Modifier.fillMaxSize().padding(horizontal = 16.dp)
+                .verticalScroll(androidx.compose.runtime.rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(Modifier.height(10.dp))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Menu, "Menu", tint = Color(0xFFC7A5FF), modifier = Modifier.size(27.dp))
+                Spacer(Modifier.weight(1f))
+                Surface(
+                    color = Color(0xFF33250C),
+                    shape = RoundedCornerShape(50.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFC928))
+                ) {
+                    Row(Modifier.padding(horizontal = 13.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.WorkspacePremium, null, tint = Color(0xFFFFD34D), modifier = Modifier.size(17.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Pro", color = Color(0xFFFFD34D), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
                 }
-                Spacer(Modifier.height(30.dp))
+            }
+            Spacer(Modifier.height(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                 Box(
-                    Modifier.fillMaxWidth().background(glow, RoundedCornerShape(26.dp)).padding(20.dp)
+                    Modifier.size(74.dp).background(
+                        androidx.compose.ui.graphics.Brush.linearGradient(listOf(violet, Color(0xFF536BFF), cyan)),
+                        RoundedCornerShape(24.dp)
+                    ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column {
-                        Text("MONDAY • YOUR DIGITAL SPACE", color = Color(0xFFB7B0EF), fontSize = 9.sp, letterSpacing = 1.5.sp)
-                        Spacer(Modifier.height(12.dp))
-                        Text("Explore\nbeyond limits.", color = Color.White, fontSize = 32.sp, lineHeight = 36.sp, fontWeight = FontWeight.ExtraBold)
-                        Spacer(Modifier.height(8.dp))
-                        Text("A calmer, smarter way to explore the web.", color = Color(0xFFD2D5EA), fontSize = 12.sp)
-                        Spacer(Modifier.height(19.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Surface(color = Color(0xFF8D6BFF), shape = RoundedCornerShape(12.dp), onClick = onAi) {
-                                Row(Modifier.padding(horizontal = 13.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.AutoAwesome, null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                    Spacer(Modifier.width(7.dp))
-                                    Text("Meet AETHERON AI", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                                }
-                            }
-                            Spacer(Modifier.weight(1f))
-                            Icon(Icons.Default.Bolt, null, tint = Color(0xFF9FEAFF), modifier = Modifier.size(28.dp))
-                        }
-                    }
+                    Icon(Icons.Default.Public, null, tint = Color.White, modifier = Modifier.size(48.dp))
                 }
-                Spacer(Modifier.height(18.dp))
-                Row(
-                    Modifier.fillMaxWidth().height(60.dp)
-                        .background(Color(0xFF171E34), RoundedCornerShape(18.dp))
-                        .padding(start = 15.dp, end = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Search, null, tint = Color(0xFF9D8BFF), modifier = Modifier.size(22.dp))
-                    Spacer(Modifier.width(10.dp))
-                    BasicTextField(
-                        value = query, onValueChange = { query = it },
-                        modifier = Modifier.weight(1f), singleLine = true,
-                        textStyle = TextStyle(color = Ink, fontSize = 14.sp),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                        keyboardActions = KeyboardActions(onGo = { if (query.isNotBlank()) onSearch(query) }),
-                        decorationBox = { inner ->
-                            Box {
-                                if (query.isBlank()) Text("Search or enter website", color = Muted, fontSize = 13.sp)
-                                inner()
-                            }
-                        }
+                Spacer(Modifier.width(13.dp))
+                Column {
+                    Text("AETHERON", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                    Text("Browse  •  Explore  •  Create", color = Color(0xFFD7D9FF), fontSize = 12.sp)
+                }
+            }
+            Spacer(Modifier.height(22.dp))
+            Row(
+                Modifier.fillMaxWidth().height(58.dp)
+                    .background(
+                        androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFF26144C), Color(0xFF102A54), Color(0xFF082D50))),
+                        RoundedCornerShape(30.dp)
                     )
-                    IconButton(
-                        onClick = { if (query.isNotBlank()) onSearch(query) },
-                        modifier = Modifier.size(46.dp).background(Color(0xFF7258E8), RoundedCornerShape(14.dp))
-                    ) { Icon(Icons.Default.ArrowForward, "Search", tint = Color.White) }
-                }
-                Spacer(Modifier.height(9.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Shield, null, tint = Green, modifier = Modifier.size(13.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Private by design · Your data stays on this device", color = Muted, fontSize = 10.sp)
-                }
+                    .then(Modifier)
+                    .clickable { showSearch = true }
+                    .padding(horizontal = 17.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("G", color = Color(0xFF4C9AFF), fontSize = 25.sp, fontWeight = FontWeight.Black)
+                Spacer(Modifier.width(15.dp))
+                Text("Search or enter URL...", color = Color(0xFFB8B9E7), fontSize = 14.sp, modifier = Modifier.weight(1f))
+                Icon(Icons.Default.Mic, "Voice search", tint = Color.White, modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(16.dp))
+                Icon(Icons.Default.QrCodeScanner, "Scan", tint = Color.White, modifier = Modifier.size(23.dp))
             }
-        }
-        item {
-            Column(Modifier.fillMaxWidth().widthIn(max = 560.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Quick access", color = Ink, fontSize = 19.sp, fontWeight = FontWeight.Bold)
-                        Text("Your favorite corners of the internet", color = Muted, fontSize = 11.sp)
-                    }
-                    TextButton(onClick = onBookmarks) { Text("Library  →", color = Color(0xFFAA98FF), fontSize = 12.sp) }
-                }
-                Spacer(Modifier.height(13.dp))
-                quick.chunked(2).forEach { pair ->
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        pair.forEach { (name, url, icon) ->
-                            Row(
-                                Modifier.weight(1f).height(76.dp)
-                                    .background(Color(0xFF151C31), RoundedCornerShape(17.dp))
-                                    .clickable { onQuick(url) }.padding(horizontal = 13.dp),
-                                verticalAlignment = Alignment.CenterVertically
+            Spacer(Modifier.height(20.dp))
+            // Eight familiar shortcuts, arranged like the approved concept.
+            shortcuts.chunked(4).forEach { group ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    group.forEach { item ->
+                        Column(
+                            Modifier.weight(1f).clickable { onQuick(item.third) }.padding(vertical = 5.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                Modifier.size(66.dp).background(
+                                    androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF25215B), Color(0xFF101C45))),
+                                    RoundedCornerShape(21.dp)
+                                ),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Box(Modifier.size(39.dp).background(Color(0xFF27264D), RoundedCornerShape(13.dp)), contentAlignment = Alignment.Center) {
-                                    Icon(icon, null, tint = Color(0xFFB5A3FF), modifier = Modifier.size(21.dp))
-                                }
-                                Spacer(Modifier.width(10.dp))
-                                Text(name, color = Ink, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                Icon(item.second, null, tint = if (item.first == "YouTube") Color(0xFFFF4C69) else cyan, modifier = Modifier.size(34.dp))
                             }
+                            Spacer(Modifier.height(6.dp))
+                            Text(item.first, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                         }
                     }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                listOf(
+                    Triple("AI Assistant", Icons.Default.AutoAwesome, onAi),
+                    Triple("Tools", Icons.Default.Build, onResources),
+                    Triple("Bookmarks", Icons.Default.Star, onBookmarks),
+                    Triple("History", Icons.Default.History, onBookmarks)
+                ).forEach { item ->
+                    Column(Modifier.weight(1f).clickable { item.third() }.padding(vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(Modifier.size(62.dp).background(Color(0xFF21194F), RoundedCornerShape(20.dp)), contentAlignment = Alignment.Center) {
+                            Icon(item.second, null, tint = violet, modifier = Modifier.size(31.dp))
+                        }
+                        Spacer(Modifier.height(5.dp))
+                        Text(item.first, color = Color.White, fontSize = 10.sp, maxLines = 1)
+                    }
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Row(
+                Modifier.fillMaxWidth().height(132.dp)
+                    .background(
+                        androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF24115A), Color(0xFF102B62), Color(0xFF071D42))),
+                        RoundedCornerShape(24.dp)
+                    )
+                    .clickable(onClick = onAi).padding(17.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(Modifier.size(74.dp).background(Color(0xFF342B80), CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.SmartToy, null, tint = Color(0xFF9BEAFF), modifier = Modifier.size(52.dp))
+                }
+                Spacer(Modifier.width(13.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("AETHERON AI", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Ask anything, get instant answers...", color = Color(0xFFC6C9F4), fontSize = 10.sp, maxLines = 2)
                     Spacer(Modifier.height(10.dp))
+                    Surface(color = Color(0xFF8B3DFA), shape = RoundedCornerShape(22.dp)) {
+                        Text("Chat Now  →", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp,
+                            modifier = Modifier.clickable(onClick = onAi).padding(horizontal = 18.dp, vertical = 8.dp))
+                    }
+                }
+                Icon(Icons.Default.ChevronRight, null, tint = Color.White)
+            }
+            Spacer(Modifier.height(18.dp))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Bolt, null, tint = Color(0xFFFFC928), modifier = Modifier.size(23.dp))
+                Spacer(Modifier.width(7.dp))
+                Text("Quick Access", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.weight(1f))
+                Text("See All  →", color = Color(0xFFAD8BFF), fontSize = 12.sp, modifier = Modifier.clickable(onClick = onResources))
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                tools.forEachIndexed { index, item ->
+                    Column(
+                        Modifier.weight(1f).height(104.dp)
+                            .background(listOf(Color(0xFF1D1B55), Color(0xFF102D43), Color(0xFF332047), Color(0xFF24194B))[index], RoundedCornerShape(18.dp))
+                            .clickable { item.third() }.padding(7.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(item.second, null, tint = listOf(violet, Color(0xFF32E6A2), Color(0xFFFFB52E), violet)[index], modifier = Modifier.size(27.dp))
+                        Spacer(Modifier.height(7.dp))
+                        Text(item.first, color = Color.White, fontSize = 10.sp, textAlign = TextAlign.Center, lineHeight = 12.sp)
+                    }
                 }
             }
-        }
-        item {
-            Column(Modifier.fillMaxWidth().widthIn(max = 560.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Made for your flow", color = Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.weight(1f))
-                    Icon(Icons.Default.AutoAwesome, null, tint = Color(0xFFAA98FF))
+            Spacer(Modifier.height(12.dp))
+            Row(
+                Modifier.fillMaxWidth().background(Color(0xFF0C1934), RoundedCornerShape(18.dp)).padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.VerifiedUser, null, tint = Color(0xFF25E6A0), modifier = Modifier.size(25.dp))
+                Spacer(Modifier.width(9.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Safe & Secure", color = Color(0xFF25E6A0), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("Your browsing is protected", color = Color(0xFFC5CBE5), fontSize = 9.sp)
                 }
-                Spacer(Modifier.height(12.dp))
-                Row(
-                    Modifier.fillMaxWidth().background(Color(0xFF171D34), RoundedCornerShape(19.dp))
-                        .clickable(onClick = onResources).padding(15.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(Modifier.size(42.dp).background(Color(0xFF29264F), RoundedCornerShape(13.dp)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Tune, null, tint = Color(0xFFB5A3FF))
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("Tools for curious minds", color = Ink, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                        Text("Explore developer resources and browser tools", color = Muted, fontSize = 10.sp)
-                    }
-                    Icon(Icons.Default.ChevronRight, null, tint = Muted)
+                Box(Modifier.width(1.dp).height(30.dp).background(Color(0xFF465078)))
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text("● Online", color = Color(0xFF25E6A0), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("All systems active", color = Color(0xFFC5CBE5), fontSize = 9.sp)
                 }
             }
+            Spacer(Modifier.height(12.dp))
+            Row(
+                Modifier.fillMaxWidth().height(58.dp).background(Color(0xDD0B1030), RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Home, null, tint = Color(0xFFC17AFF), modifier = Modifier.size(22.dp))
+                    Text("Home", color = Color(0xFFC17AFF), fontSize = 10.sp)
+                }
+                Column(Modifier.clickable(onClick = onBookmarks), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Bookmarks, null, tint = Color(0xFF9EA7D4), modifier = Modifier.size(22.dp))
+                    Text("Saved", color = Color(0xFF9EA7D4), fontSize = 10.sp)
+                }
+                Column(Modifier.clickable(onClick = onResources), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Download, null, tint = Color(0xFF9EA7D4), modifier = Modifier.size(22.dp))
+                    Text("Downloads", color = Color(0xFF9EA7D4), fontSize = 10.sp)
+                }
+                Column(Modifier.clickable(onClick = onResources), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.MoreVert, null, tint = Color(0xFF9EA7D4), modifier = Modifier.size(22.dp))
+                    Text("More", color = Color(0xFF9EA7D4), fontSize = 10.sp)
+                }
+            }
+            Spacer(Modifier.height(8.dp))
         }
+    }
+
+    if (showSearch) {
+        AlertDialog(
+            onDismissRequest = { showSearch = false },
+            title = { Text("Search or enter URL") },
+            text = {
+                BasicTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    singleLine = true,
+                    textStyle = TextStyle(color = Ink, fontSize = 16.sp),
+                    modifier = Modifier.fillMaxWidth().background(Color(0xFF171E34), RoundedCornerShape(10.dp)).padding(12.dp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                    keyboardActions = KeyboardActions(onGo = {
+                        if (query.isNotBlank()) { showSearch = false; onSearch(query) }
+                    })
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { if (query.isNotBlank()) { showSearch = false; onSearch(query) } }) { Text("Go") }
+            },
+            dismissButton = { TextButton(onClick = { showSearch = false }) { Text("Cancel") } }
+        )
     }
 }
 
