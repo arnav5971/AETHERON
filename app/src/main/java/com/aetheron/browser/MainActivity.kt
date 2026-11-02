@@ -723,7 +723,7 @@ private fun AetheronBrowser(context: Context) {
                                 // Allow user-initiated target=_blank / window.open flows.
                                 // The popup handler below routes Google OAuth to a trusted browser
                                 // and keeps ordinary web popups inside AETHERON.
-                                settings.javaScriptCanOpenWindowsAutomatically = true
+                                settings.javaScriptCanOpenWindowsAutomatically = false
                                 settings.setSupportMultipleWindows(true)
                                 settings.databaseEnabled = true
                                 settings.cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
