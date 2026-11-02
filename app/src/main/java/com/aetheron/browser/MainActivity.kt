@@ -582,6 +582,9 @@ private fun AetheronBrowser(context: Context) {
         (context as? MainActivity)?.hideVideoFullscreen()
         isVideoFullscreen = false
     }
+    BackHandler(enabled = page in setOf("AI", "Privacy", "Settings") && !isVideoFullscreen) {
+        page = "Home"
+    }
     BackHandler(enabled = page == "Resources" && !isVideoFullscreen) {
         page = "Home"
     }
@@ -1024,8 +1027,7 @@ private fun AetheronBrowser(context: Context) {
                 } else if (page == "AI" || page == "Privacy" || page == "Settings") {
                     AetheronFeatureScreen(
                         page = page,
-                        onBack = { page = "Home" },
-                        onOpenSettings = { page = it }
+                        onBack = { page = "Home" }
                     )
                 } else if (page == "Resources") {
                     DeveloperResourcesScreen(
@@ -1245,8 +1247,7 @@ private fun HomeScreen(
 @Composable
 private fun AetheronFeatureScreen(
     page: String,
-    onBack: () -> Unit,
-    onOpenSettings: (String) -> Unit
+    onBack: () -> Unit
 ) {
     val title = when (page) {
         "AI" -> "AETHERON AI"
@@ -1304,7 +1305,6 @@ private fun AetheronFeatureScreen(
             items(items) { item ->
                 Row(
                     Modifier.fillMaxWidth().background(Color(0xFF151B2F), RoundedCornerShape(16.dp))
-                        .clickable { if (page == "Settings") onOpenSettings("Privacy") }
                         .padding(15.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -1346,7 +1346,7 @@ private fun SavedScreen(
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(entries, key = { it.url }) { item ->
                     Row(
-                        Modifier.fillMaxWidth().background(Color(0xFFF7F9FC), RoundedCornerShape(15.dp))
+                        Modifier.fillMaxWidth().background(Color(0xFF151B2F), RoundedCornerShape(15.dp))
                             .clickable { onOpen(item.url) }.padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
