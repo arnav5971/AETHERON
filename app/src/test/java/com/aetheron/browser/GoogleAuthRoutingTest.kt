@@ -25,6 +25,8 @@ class GoogleAuthRoutingTest {
         assertFalse(shouldOpenInTrustedBrowser("https://youtube.com/"))
         assertFalse(shouldOpenInTrustedBrowser("https://notgoogle.com/"))
         assertFalse(shouldOpenInTrustedBrowser("http://www.google.com/"))
+        assertFalse(shouldOpenInTrustedBrowser("https://accounts.google.com:8443/signin"))
+        assertTrue(shouldOpenInTrustedBrowser("https://accounts.google.com:443/signin"))
     }
 
     @Test
