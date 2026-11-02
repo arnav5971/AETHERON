@@ -339,7 +339,7 @@ class MainActivity : ComponentActivity() {
         if (!popupWebViews.remove(popup)) return
         popup.stopLoading()
         popup.webChromeClient = null
-        popup.webViewClient = null
+        popup.webViewClient = WebViewClient()
         (popup.parent as? ViewGroup)?.removeView(popup)
         popup.removeAllViews()
         popup.destroy()
@@ -828,6 +828,28 @@ private fun AetheronBrowser(context: Context) {
                                     override fun onSafeBrowsingHit(view: WebView, request: WebResourceRequest, threatType: Int, callback: SafeBrowsingResponse) {
                                         callback.backToSafety(true)
                                     }
+                                    override fun onRenderProcessGone(
+                                        view: WebView,
+                                        detail: android.webkit.RenderProcessGoneDetail
+                                    ): Boolean {
+                                        if (webView === view) {
+                                            webView = null
+                                            (context as? MainActivity)?.activeWebView = null
+                                            page = "Home"
+                                            loading = false
+                                            progress = 0
+                                            canBack = false
+                                            canForward = false
+                                            Toast.makeText(
+                                                context,
+                                                "A web page stopped unexpectedly. Please reopen it.",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+                                        (view.parent as? ViewGroup)?.removeView(view)
+                                        view.destroy()
+                                        return true
+                                    }
                                 }
                                 webChromeClient = object : WebChromeClient() {
                                     override fun onCreateWindow(
@@ -927,28 +949,6 @@ private fun AetheronBrowser(context: Context) {
                                     }
                                     override fun onReceivedTitle(view: WebView, title: String?) {
                                         currentTitle = title.orEmpty()
-                                    }
-                                    override fun onRenderProcessGone(
-                                        view: WebView,
-                                        detail: android.webkit.RenderProcessGoneDetail
-                                    ): Boolean {
-                                        if (webView === view) {
-                                            webView = null
-                                            (context as? MainActivity)?.activeWebView = null
-                                            page = "Home"
-                                            loading = false
-                                            progress = 0
-                                            canBack = false
-                                            canForward = false
-                                            Toast.makeText(
-                                                context,
-                                                "A web page stopped unexpectedly. Please reopen it.",
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                        }
-                                        (view.parent as? ViewGroup)?.removeView(view)
-                                        view.destroy()
-                                        return true
                                     }
                                     override fun onPermissionRequest(request: PermissionRequest) {
                                         (context as? MainActivity)?.handleWebPermissionRequest(request)
