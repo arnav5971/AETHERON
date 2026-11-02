@@ -933,7 +933,8 @@ private fun HomeScreen(
                     Spacer(Modifier.width(12.dp))
                     Text("YOUR SPACE, YOUR PACE", color = Muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.1.sp)
                 }
-                Spacer(Modifier.height(62.dp))                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Spacer(Modifier.height(62.dp))
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Box(Modifier.size(92.dp).background(Color(0xFFE0EAFE), RoundedCornerShape(30.dp)), contentAlignment = Alignment.Center) {
                         Icon(Icons.Default.Public, null, tint = Blue, modifier = Modifier.size(52.dp))
                     }
