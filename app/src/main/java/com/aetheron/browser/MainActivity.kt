@@ -266,12 +266,13 @@ class MainActivity : ComponentActivity() {
                 callback.onReceiveValue(uris)
             }
         }
-        window.statusBarColor = android.graphics.Color.rgb(9, 7, 37)
+        // Keep the reference home artwork clean: hide the Android status bar
+        // (clock, signal and battery indicators) on the app's main surfaces.
         @Suppress("DEPRECATION")
-        window.decorView.systemUiVisibility =
-            window.decorView.systemUiVisibility and
-                View.SYSTEM_UI_FLAG_FULLSCREEN.inv() and
-                View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+        window.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
+        )
         setContent { AetheronBrowser(this) }
     }
 
@@ -1146,7 +1147,12 @@ private fun HomeScreen(
         fun hit(x: Float, y: Float, w: Float, h: Float, action: () -> Unit): Modifier =
             Modifier.offset(x = maxWidth * x, y = maxHeight * y)
                 .size(width = maxWidth * w, height = maxHeight * h)
-                .clickable(onClick = action)
+                // Invisible hit areas must not draw the default dark ripple/splash.
+                .clickable(
+                    interactionSource = null,
+                    indication = null,
+                    onClick = action
+                )
 
         // Search field, microphone and visual scan control.
         Box(hit(0.035f, 0.252f, 0.70f, 0.065f) { showSearch = true })
