@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="Theme.Aetheron.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/aetheron_splash_bg</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_aetheron_mark</item>
-        <item name="windowSplashScreenIconBackgroundColor">@color/aetheron_icon_bg</item>
-        <item name="postSplashScreenTheme">@style/Theme.Aetheron</item>
-    </style>
-</resources>
