@@ -469,6 +469,10 @@ private fun applySiteMode(view: WebView, desktopMode: Boolean) {
 private fun openExternalUri(context: Context, uri: Uri): Boolean {
     val scheme = uri.scheme?.lowercase() ?: return true
     if (scheme == "http" || scheme == "https") return false
+    // Never hand browser-internal or local-resource schemes to another app.
+    if (scheme in setOf("javascript", "vbscript", "data", "blob", "file", "content", "about", "chrome", "devtools")) {
+        return true
+    }
     return try {
         val intent = if (scheme == "intent") {
             Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME).apply {
