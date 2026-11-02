@@ -41,6 +41,7 @@ import androidx.activity.compose.setContent
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.app.NotificationCompat
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -61,6 +62,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -1128,230 +1131,50 @@ private fun HomeScreen(
     var query by rememberSaveable { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
 
-    val ink = Color(0xFF17105F)
-    val muted = Color(0xFF6567A6)
-    val purple = Color(0xFF8B2BFA)
-    val blue = Color(0xFF159CEB)
-    val glass = Color(0xDFFFFFFF)
-    val sites = listOf(
-        Triple("Google", Icons.Default.Search, "https://www.google.com"),
-        Triple("YouTube", Icons.Default.PlayArrow, "https://m.youtube.com"),
-        Triple("GitHub", Icons.Default.Code, "https://github.com"),
-        Triple("Wikipedia", Icons.Default.MenuBook, "https://www.wikipedia.org")
-    )
-    val actions = listOf(
-        Triple("Bookmarks", Icons.Default.Bookmark, onBookmarks),
-        Triple("History", Icons.Default.History, onHistory),
-        Triple("Downloads", Icons.Default.Download, onDownloads),
-        Triple("Settings", Icons.Default.Settings, onSettings)
-    )
-
-    Column(
-        Modifier.fillMaxSize().background(
-            androidx.compose.ui.graphics.Brush.verticalGradient(
-                listOf(Color(0xFF172A83), Color(0xFF8DBBFF), Color(0xFFF1DFFF), Color(0xFFF8E9FF))
-            )
-        )
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize().background(Color(0xFF172A83))
     ) {
-        Column(
-            Modifier.weight(1f).fillMaxWidth().verticalScroll(ScrollState(0))
-        ) {
-            // Dreamy night-sky hero. The Android status bar remains outside this content.
-            Box(
-                Modifier.fillMaxWidth().height(245.dp).background(
-                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                        listOf(Color(0xFF10236E), Color(0xFF315CCB), Color(0xFF9ABFFF))
-                    )
-                )
-            ) {
-                Text("✦     ·       ✧       ·      ✦       ·       ✧", color = Color(0xFFFFD9FF), fontSize = 13.sp,
-                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 13.dp))
-                Text("☾", color = Color(0xFFFFE9B8), fontSize = 82.sp,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 17.dp, end = 24.dp))
-                Box(
-                    Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 25.dp)
-                        .size(48.dp).background(Color(0xFF6324B8).copy(alpha = .8f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) { Text("☾", color = Color.White, fontSize = 25.sp) }
+        // The supplied artwork already contains the exact logo, illustrations,
+        // cards, labels and navigation artwork. Keep it intact; only add hit targets.
+        Image(
+            painter = painterResource(id = R.drawable.aetheron_home_art),
+            contentDescription = "AETHERON home screen",
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.fillMaxSize()
+        )
 
-                Column(
-                    Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(top = 48.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.height(74.dp).width(100.dp)) {
-                        Text("A", color = Color(0xFFB57BFF), fontSize = 78.sp, fontWeight = FontWeight.Light)
-                        Text("⌁", color = Color(0xFF00D8FF), fontSize = 68.sp, modifier = Modifier.offset(x = 9.dp, y = 2.dp))
-                    }
-                    Text("AETHERON", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
-                    Text("—  Browse Beyond Limits  —", color = Color(0xFFE8E9FF), fontSize = 12.sp, letterSpacing = 1.5.sp)
-                }
+        fun hit(x: Float, y: Float, w: Float, h: Float, action: () -> Unit): Modifier =
+            Modifier.offset(x = maxWidth * x, y = maxHeight * y)
+                .size(width = maxWidth * w, height = maxHeight * h)
+                .clickable(onClick = action)
 
-                // Cat resting on a soft cloud bank.
-                Text("♡", color = Color(0xFFFFD8F5), fontSize = 28.sp,
-                    modifier = Modifier.align(Alignment.CenterStart).padding(start = 89.dp, top = 4.dp))
-                Box(
-                    Modifier.align(Alignment.BottomStart).padding(start = 22.dp, bottom = 0.dp)
-                        .size(width = 132.dp, height = 83.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("☁", color = Color(0xFFEAF0FF), fontSize = 104.sp)
-                    Text("🐱", fontSize = 62.sp, modifier = Modifier.offset(y = (-8).dp))
-                }
-                Row(
-                    Modifier.align(Alignment.BottomEnd).padding(end = 0.dp, bottom = 0.dp),
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    repeat(4) { index ->
-                        Box(Modifier.size((52 + index * 8).dp).offset(x = (-10 * index).dp)
-                            .background(Color(0xFFEAF1FF).copy(alpha = .92f), CircleShape))
-                    }
-                }
-            }
+        // Search field, microphone and visual scan control.
+        Box(hit(0.035f, 0.252f, 0.70f, 0.065f) { showSearch = true })
+        Box(hit(0.755f, 0.252f, 0.085f, 0.065f) { showSearch = true })
+        Box(hit(0.855f, 0.252f, 0.105f, 0.065f) { showSearch = true })
 
-            Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
-                Spacer(Modifier.height(10.dp))
-                Row(
-                    Modifier.fillMaxWidth().height(54.dp)
-                        .background(Color(0xF7FFFFFF), RoundedCornerShape(32.dp))
-                        .clickable { showSearch = true }.padding(horizontal = 19.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Search, null, tint = ink, modifier = Modifier.size(25.dp))
-                    Spacer(Modifier.width(14.dp))
-                    Text("Search or enter URL...", color = Color(0xFF8588B9), fontSize = 14.sp,
-                        modifier = Modifier.weight(1f))
-                    Icon(Icons.Default.Mic, "Voice search", tint = ink, modifier = Modifier.size(24.dp)
-                        .clickable { showSearch = true })
-                    Spacer(Modifier.width(17.dp))
-                    Icon(Icons.Default.CenterFocusStrong, "Scan", tint = ink, modifier = Modifier.size(24.dp)
-                        .clickable { showSearch = true })
-                }
+        // Quick websites.
+        Box(hit(0.075f, 0.382f, 0.18f, 0.105f) { onQuick("https://www.google.com") })
+        Box(hit(0.295f, 0.382f, 0.18f, 0.105f) { onQuick("https://m.youtube.com") })
+        Box(hit(0.525f, 0.382f, 0.18f, 0.105f) { onQuick("https://github.com") })
+        Box(hit(0.745f, 0.382f, 0.18f, 0.105f) { onQuick("https://www.wikipedia.org") })
 
-                Spacer(Modifier.height(17.dp))
-                Column(Modifier.fillMaxWidth().background(glass, RoundedCornerShape(25.dp)).padding(15.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Bolt, null, tint = purple, modifier = Modifier.size(24.dp))
-                        Spacer(Modifier.width(10.dp))
-                        Text("Quick Websites", color = ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.weight(1f))
-                        Text("See All  ›", color = purple, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        sites.forEachIndexed { index, item ->
-                            Column(Modifier.weight(1f).clickable { onQuick(item.third) },
-                                horizontalAlignment = Alignment.CenterHorizontally) {
-                                Box(
-                                    Modifier.fillMaxWidth().height(54.dp)
-                                        .background(Color.White.copy(alpha = .67f), RoundedCornerShape(17.dp)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    when (index) {
-                                        0 -> Text("G", color = Color(0xFF4285F4), fontSize = 37.sp, fontWeight = FontWeight.Bold)
-                                        1 -> Box(Modifier.size(width = 39.dp, height = 25.dp).background(Color.Red, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                                            Icon(Icons.Default.PlayArrow, null, tint = Color.White, modifier = Modifier.size(22.dp))
-                                        }
-                                        2 -> Text("●", color = Color.Black, fontSize = 35.sp)
-                                        else -> Text("W", color = Color.Black, fontSize = 34.sp, fontWeight = FontWeight.Light)
-                                    }
-                                }
-                                Spacer(Modifier.height(5.dp))
-                                Text(item.first, color = ink, fontSize = 10.sp, maxLines = 1)
-                            }
-                        }
-                    }
-                }
+        // Quick actions.
+        Box(hit(0.075f, 0.552f, 0.19f, 0.105f, onBookmarks))
+        Box(hit(0.295f, 0.552f, 0.19f, 0.105f, onHistory))
+        Box(hit(0.515f, 0.552f, 0.19f, 0.105f, onDownloads))
+        Box(hit(0.735f, 0.552f, 0.19f, 0.105f, onSettings))
 
-                Spacer(Modifier.height(15.dp))
-                Column(Modifier.fillMaxWidth().background(glass, RoundedCornerShape(25.dp)).padding(15.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.GridView, null, tint = purple, modifier = Modifier.size(23.dp))
-                        Spacer(Modifier.width(10.dp))
-                        Text("Quick Actions", color = ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.weight(1f))
-                        Text("See All  ›", color = purple, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        actions.forEachIndexed { index, item ->
-                            Column(
-                                Modifier.weight(1f).height(75.dp).background(Color.White.copy(alpha = .56f), RoundedCornerShape(18.dp))
-                                    .clickable { item.third() },
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(item.second, null, tint = listOf(purple, Color(0xFF5942D7), blue, Color(0xFF7646E8))[index],
-                                    modifier = Modifier.size(31.dp))
-                                Spacer(Modifier.height(5.dp))
-                                Text(item.first, color = ink, fontSize = 10.sp, maxLines = 1)
-                            }
-                        }
-                    }
-                }
+        // Feature cards.
+        Box(hit(0.035f, 0.682f, 0.465f, 0.145f, onPrivacy))
+        Box(hit(0.525f, 0.682f, 0.44f, 0.145f, onSettings))
 
-                Spacer(Modifier.height(15.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Column(
-                        Modifier.weight(1f).height(132.dp)
-                            .background(Color(0xD8D8F5FF), RoundedCornerShape(25.dp))
-                            .clickable(onClick = onPrivacy).padding(13.dp),
-                        verticalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Security, null, tint = Color(0xFF087FD5), modifier = Modifier.size(31.dp))
-                            Spacer(Modifier.width(7.dp))
-                            Text("Privacy & Security", color = Color(0xFF123DA9), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                        Text("Keep your browsing private & secure", color = muted, fontSize = 10.sp, lineHeight = 15.sp)
-                        Text("Manage  →", color = Color.White, fontSize = 11.sp, modifier = Modifier
-                            .background(Color(0xFF38B5F6), RoundedCornerShape(22.dp)).padding(horizontal = 14.dp, vertical = 7.dp))
-                    }
-                    Column(
-                        Modifier.weight(1f).height(132.dp)
-                            .background(Color(0xDFF7E5FF), RoundedCornerShape(25.dp))
-                            .clickable(onClick = onSettings).padding(13.dp),
-                        verticalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Settings, null, tint = purple, modifier = Modifier.size(31.dp))
-                            Spacer(Modifier.width(7.dp))
-                            Text("App Settings", color = ink, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                        Text("Customize your browser experience", color = muted, fontSize = 10.sp, lineHeight = 15.sp)
-                        Text("Open Settings  →", color = purple, fontSize = 11.sp, modifier = Modifier
-                            .background(Color(0xFFE7A9FF), RoundedCornerShape(22.dp)).padding(horizontal = 12.dp, vertical = 7.dp))
-                    }
-                }
-                Spacer(Modifier.height(16.dp))
-            }
-        }
-
-        Row(
-            Modifier.fillMaxWidth().height(76.dp).background(Color(0xF8FFFFFF), RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
-                .navigationBarsPadding().padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            @Composable
-            fun NavItem(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit, selected: Boolean = false) {
-                Column(
-                    Modifier.weight(1f).fillMaxHeight().clickable(onClick = onClick),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(icon, label, tint = if (selected) purple else ink, modifier = Modifier.size(25.dp))
-                    Spacer(Modifier.height(3.dp))
-                    Text(label, color = if (selected) purple else ink, fontSize = 10.sp,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
-                    if (selected) Spacer(Modifier.height(2.dp))
-                }
-            }
-            NavItem("Home", Icons.Default.Home, {}, true)
-            NavItem("Bookmarks", Icons.Default.StarBorder, onBookmarks)
-            NavItem("History", Icons.Default.AccessTime, onHistory)
-            NavItem("Downloads", Icons.Default.Download, onDownloads)
-            NavItem("Settings", Icons.Default.Settings, onSettings)
-        }
+        // Bottom navigation labels/icons are part of the reference artwork.
+        Box(hit(0.025f, 0.895f, 0.17f, 0.095f) { })
+        Box(hit(0.205f, 0.895f, 0.19f, 0.095f, onBookmarks))
+        Box(hit(0.405f, 0.895f, 0.19f, 0.095f, onHistory))
+        Box(hit(0.605f, 0.895f, 0.19f, 0.095f, onDownloads))
+        Box(hit(0.805f, 0.895f, 0.17f, 0.095f, onSettings))
     }
 
     if (showSearch) {
@@ -1363,18 +1186,32 @@ private fun HomeScreen(
                     value = query,
                     onValueChange = { query = it },
                     singleLine = true,
-                    textStyle = TextStyle(color = ink, fontSize = 16.sp),
-                    modifier = Modifier.fillMaxWidth().background(Color(0xFFF0EEFA), RoundedCornerShape(12.dp)).padding(12.dp),
+                    textStyle = TextStyle(color = Color(0xFF17105F), fontSize = 16.sp),
+                    modifier = Modifier.fillMaxWidth()
+                        .background(Color(0xFFF0EEFA), RoundedCornerShape(12.dp))
+                        .padding(12.dp),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                     keyboardActions = KeyboardActions(onGo = {
-                        if (query.isNotBlank()) { showSearch = false; onSearch(query) }
+                        if (query.isNotBlank()) {
+                            showSearch = false
+                            onSearch(query)
+                        }
                     })
                 )
             },
             confirmButton = {
-                TextButton(onClick = { if (query.isNotBlank()) { showSearch = false; onSearch(query) } }) { Text("Go", color = purple) }
+                TextButton(onClick = {
+                    if (query.isNotBlank()) {
+                        showSearch = false
+                        onSearch(query)
+                    }
+                }) { Text("Go", color = Color(0xFF8B2BFA)) }
             },
-            dismissButton = { TextButton(onClick = { showSearch = false }) { Text("Cancel", color = muted) } }
+            dismissButton = {
+                TextButton(onClick = { showSearch = false }) {
+                    Text("Cancel", color = Color(0xFF6567A6))
+                }
+            }
         )
     }
 }
