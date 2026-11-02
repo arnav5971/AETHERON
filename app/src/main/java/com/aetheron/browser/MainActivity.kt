@@ -511,6 +511,9 @@ private fun AetheronBrowser(context: Context) {
         (context as? MainActivity)?.hideVideoFullscreen()
         isVideoFullscreen = false
     }
+    BackHandler(enabled = page == "Resources" && !isVideoFullscreen) {
+        page = "Home"
+    }
     BackHandler(page == "Web" && !isVideoFullscreen) {
         if (webView?.canGoBack() == true) webView?.goBack()
         else { page = "Home"; loading = false }
