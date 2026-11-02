@@ -1151,7 +1151,7 @@ private fun HomeScreen(
                     Row(Modifier.padding(horizontal = 13.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.WorkspacePremium, null, tint = Color(0xFFFFD34D), modifier = Modifier.size(17.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Pro", color = Color(0xFFFFD34D), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("AETHERON", color = Color(0xFFFFD34D), fontWeight = FontWeight.Bold, fontSize = 11.sp)
                     }
                 }
             }
@@ -1187,12 +1187,10 @@ private fun HomeScreen(
                 Text("G", color = Color(0xFF4C9AFF), fontSize = 25.sp, fontWeight = FontWeight.Black)
                 Spacer(Modifier.width(15.dp))
                 Text("Search or enter URL...", color = Color(0xFFB8B9E7), fontSize = 14.sp, modifier = Modifier.weight(1f))
-                Icon(Icons.Default.Mic, "Voice search", tint = Color.White, modifier = Modifier.size(24.dp))
-                Spacer(Modifier.width(16.dp))
-                Icon(Icons.Default.QrCodeScanner, "Scan", tint = Color.White, modifier = Modifier.size(23.dp))
+                Icon(Icons.Default.ArrowForward, "Search", tint = Color.White, modifier = Modifier.size(23.dp))
             }
             Spacer(Modifier.height(20.dp))
-            // Eight familiar shortcuts, arranged like the approved concept.
+            // Four responsive quick-site shortcuts.
             shortcuts.chunked(4).forEach { group ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     group.forEach { item ->
@@ -1290,14 +1288,14 @@ private fun HomeScreen(
                 Icon(Icons.Default.VerifiedUser, null, tint = Color(0xFF25E6A0), modifier = Modifier.size(25.dp))
                 Spacer(Modifier.width(9.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Safe & Secure", color = Color(0xFF25E6A0), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("Your browsing is protected", color = Color(0xFFC5CBE5), fontSize = 9.sp)
+                    Text("Privacy controls", color = Color(0xFF25E6A0), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("Manage site permissions", color = Color(0xFFC5CBE5), fontSize = 9.sp)
                 }
                 Box(Modifier.width(1.dp).height(30.dp).background(Color(0xFF465078)))
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text("● Online", color = Color(0xFF25E6A0), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("All systems active", color = Color(0xFFC5CBE5), fontSize = 9.sp)
+                    Text("Browser", color = Color(0xFF25E6A0), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("Tools & settings", color = Color(0xFFC5CBE5), fontSize = 9.sp)
                 }
             }
             Spacer(Modifier.height(12.dp))
