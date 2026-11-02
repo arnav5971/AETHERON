@@ -297,8 +297,7 @@ class MainActivity : ComponentActivity() {
         } else {
             decor.systemUiVisibility = (
                 View.SYSTEM_UI_FLAG_FULLSCREEN or
-                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
                     View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
                     View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
                     View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -337,6 +336,7 @@ private val Line = Color(0xFFDCE4ED)
 private val Pale = Color(0xFFEAF1FA)
 private val Green = Color(0xFF218767)
 private const val GOOGLE_HOME = "https://www.google.com"
+private const val GOOGLE_AI_MODE = "https://www.google.com/ai"
 /**
  * Android WebView keeps the physical phone width as the CSS viewport when a
  * site declares width=device-width. A desktop User-Agent alone therefore does
@@ -468,7 +468,6 @@ private fun AetheronBrowser(context: Context) {
     var page by remember { mutableStateOf("Home") }
     var menuOpen by remember { mutableStateOf(false) }
     var showTabs by remember { mutableStateOf(false) }
-    var showAiInfo by remember { mutableStateOf(false) }
     var bookmarks by remember { mutableStateOf(store.read("bookmarks")) }
     var history by remember { mutableStateOf(store.read("history").take(100)) }
     val tabCount = 1
@@ -597,8 +596,7 @@ private fun AetheronBrowser(context: Context) {
                 ) {
                     Icon(Icons.Default.Search, null, tint = Muted, modifier = Modifier.size(22.dp))
                     Spacer(Modifier.width(8.dp))
-                    BasicTextField(
-                        value = address,
+                    BasicTextField(                        value = address,
                         onValueChange = { address = it },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
@@ -647,7 +645,7 @@ private fun AetheronBrowser(context: Context) {
                                 Toast.makeText(context, "Open Downloads from your device", Toast.LENGTH_SHORT).show()
                             }
                         })
-                        DropdownMenuItem(text = { Text("AI assistant info") }, leadingIcon = { Icon(Icons.Default.AutoAwesome, null) }, onClick = { menuOpen = false; showAiInfo = true })
+                        DropdownMenuItem(text = { Text("AI Mode · Google") }, leadingIcon = { Icon(Icons.Default.AutoAwesome, null) }, onClick = { menuOpen = false; navigate(GOOGLE_AI_MODE) })
                     }
                 }
                 }
@@ -795,7 +793,7 @@ private fun AetheronBrowser(context: Context) {
                         onSearch = { navigate(it) },
                         onQuick = { navigate(it) },
                         onBookmarks = { page = "Saved" },
-                        onAi = { showAiInfo = true },
+                        onAi = { navigate(GOOGLE_AI_MODE) },
                         onResources = { page = "Resources" }
                     )
                 } else if (page == "Resources") {
@@ -836,7 +834,7 @@ private fun AetheronBrowser(context: Context) {
                 BottomItem("Home", Icons.Default.Home, page == "Home") { page = "Home" }
                 BottomItem("Saved", Icons.Default.BookmarkBorder, page == "Saved") { page = "Saved" }
                 BottomItem("History", Icons.Default.History, page == "History") { page = "History" }
-                BottomItem("AI", Icons.Default.AutoAwesome, false) { showAiInfo = true }
+                BottomItem("AI", Icons.Default.AutoAwesome, false) { navigate(GOOGLE_AI_MODE) }
                 BottomItem("Tabs", Icons.Default.Tab, false, badge = tabCount.toString()) { showTabs = true }
             }
             }
@@ -859,14 +857,6 @@ private fun AetheronBrowser(context: Context) {
                 showTabs = false
             }) { Text("New tab") } },
             dismissButton = { TextButton(onClick = { showTabs = false }) { Text("Close") } }
-        )
-    }
-    if (showAiInfo) {
-        AlertDialog(
-            onDismissRequest = { showAiInfo = false },
-            title = { Text("AETHERON AI") },
-            text = { Text("The AI panel is designed for page summaries, explanations and browsing help. A secure AI service endpoint and provider credentials must be configured on a backend before requests can be enabled. No page content is sent anywhere in this build.") },
-            confirmButton = { TextButton(onClick = { showAiInfo = false }) { Text("Got it") } }
         )
     }
 }
@@ -897,8 +887,7 @@ private fun HomeScreen(
                     Spacer(Modifier.width(12.dp))
                     Text("YOUR SPACE, YOUR PACE", color = Muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.1.sp)
                 }
-                Spacer(Modifier.height(62.dp))
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Spacer(Modifier.height(62.dp))                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Box(Modifier.size(92.dp).background(Color(0xFFE0EAFE), RoundedCornerShape(30.dp)), contentAlignment = Alignment.Center) {
                         Icon(Icons.Default.Public, null, tint = Blue, modifier = Modifier.size(52.dp))
                     }
@@ -982,7 +971,7 @@ private fun HomeScreen(
                 TextButton(onClick = onAi, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.AutoAwesome, null, tint = Blue)
                     Spacer(Modifier.width(8.dp))
-                    Text("Explore AETHERON AI", color = Blue)
+                    Text("AI Mode · Powered by Google", color = Blue)
                 }
                 TextButton(onClick = onResources, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.Code, null, tint = Blue)
