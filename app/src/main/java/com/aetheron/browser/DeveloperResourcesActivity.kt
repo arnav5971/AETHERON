@@ -252,7 +252,7 @@ fun DeveloperResourcesScreen(
                                             modifier = Modifier.padding(vertical = 4.dp)
                                         )
                                     }
-                                    items(matchingServices, key = { it.second.id }) { (category, service) ->
+                                    items(matchingServices, key = { "${it.first.id}-${it.second.id}" }) { (category, service) ->
                                         Column {
                                             Text(
                                                 category.name,
