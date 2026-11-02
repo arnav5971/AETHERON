@@ -14,8 +14,9 @@ internal object ResourceFilterRules {
         freeTierNotes: String
     ): Boolean {
         if (filterId == "all") return true
-        val evidence = "$categoryName $serviceName $description $freeTierNotes".lowercase()
-        val notes = freeTierNotes.lowercase()
+        // Eligibility claims are checked against source-derived free-tier notes only.
+        val evidence = freeTierNotes.lowercase()
+        val notes = evidence
         return when (filterId) {
             "no_card" -> listOf(
                 "no credit card", "no card required", "without a credit card",
