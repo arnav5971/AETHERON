@@ -1208,7 +1208,6 @@ private fun HomeScreen(
             }
             Spacer(Modifier.height(20.dp))
             // Four responsive quick-site shortcuts.
-            shortcuts.chunked(4).forEach { group ->
                 Spacer(Modifier.height(18.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Bolt, null, tint = Color(0xFFFFC928), modifier = Modifier.size(23.dp))
