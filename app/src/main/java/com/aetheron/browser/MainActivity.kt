@@ -34,6 +34,7 @@ import android.view.WindowInsetsController
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
@@ -246,7 +247,17 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+        splashScreen.setOnExitAnimationListener { splashView ->
+            splashView.iconView.animate()
+                .alpha(0f)
+                .scaleX(0.88f)
+                .scaleY(0.88f)
+                .setDuration(350L)
+                .withEndAction { splashView.remove() }
+                .start()
+        }
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
         sitePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
             val callback = pendingRuntimePermissionResult
@@ -1011,6 +1022,7 @@ private fun AetheronBrowser(context: Context) {
                 } else if (page == "Home") {
                     HomeScreen(
                         onSearch = { navigate(it) },
+                        onHome = { page = "Home" },
                         onQuick = { navigate(it) },
                         onBookmarks = { page = "Saved" },
                         onHistory = { page = "History" },
@@ -1130,6 +1142,7 @@ private fun AetheronBrowser(context: Context) {
 @Composable
 private fun HomeScreen(
     onSearch: (String) -> Unit,
+    onHome: () -> Unit,
     onQuick: (String) -> Unit,
     onBookmarks: () -> Unit,
     onHistory: () -> Unit,
@@ -1184,7 +1197,7 @@ private fun HomeScreen(
         Box(hit(0.525f, 0.682f, 0.44f, 0.145f, onSettings))
 
         // Bottom navigation labels/icons are part of the reference artwork.
-        Box(hit(0.025f, 0.895f, 0.17f, 0.095f) { })
+        Box(hit(0.025f, 0.895f, 0.17f, 0.095f, onHome))
         Box(hit(0.205f, 0.895f, 0.19f, 0.095f, onBookmarks))
         Box(hit(0.405f, 0.895f, 0.19f, 0.095f, onHistory))
         Box(hit(0.605f, 0.895f, 0.19f, 0.095f, onDownloads))
