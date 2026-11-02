@@ -519,6 +519,11 @@ private class BrowserStore(context: Context) {
         items.forEach { array.put(JSONObject().put("title", it.title).put("url", it.url)) }
         prefs.edit().putString(key, array.toString()).apply()
     }
+    fun readSetting(key: String, defaultValue: String): String =
+        prefs.getString("setting_$key", defaultValue) ?: defaultValue
+    fun writeSetting(key: String, value: String) {
+        prefs.edit().putString("setting_$key", value).apply()
+    }
 }
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -544,7 +549,7 @@ private fun AetheronBrowser(context: Context) {
     var tabTitle by rememberSaveable { mutableStateOf("New tab") }
 
     fun navigate(raw: String) {
-        val target = BrowserAddress.resolve(raw)
+        val target = BrowserAddress.resolve(raw, store.readSetting("search_engine", "Google"))
         if (shouldOpenInTrustedBrowser(target)) {
             openGoogleInCustomTab(context, target)
             return
@@ -1031,7 +1036,24 @@ private fun AetheronBrowser(context: Context) {
                 } else if (page == "AI" || page == "Privacy" || page == "Settings") {
                     AetheronFeatureScreen(
                         page = page,
-                        onBack = { page = "Home" }
+                        onBack = { page = "Home" },
+                        desktopMode = desktop,
+                        searchEngine = store.readSetting("search_engine", "Google"),
+                        onDesktopModeChange = { enabled ->
+                            desktop = enabled
+                            webView?.let { view ->
+                                applySiteMode(view, enabled)
+                                if (currentUrl.isNotBlank()) view.reload()
+                            }
+                        },
+                        onSearchEngineChange = { store.writeSetting("search_engine", it) },
+                        onOpenDownloads = {
+                            try {
+                                context.startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS))
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "Downloads screen is unavailable on this device", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     )
                 } else if (page == "Resources") {
                     DeveloperResourcesScreen(
@@ -1353,18 +1375,20 @@ private fun HomeScreen(
 @Composable
 private fun AetheronFeatureScreen(
     page: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    desktopMode: Boolean = false,
+    searchEngine: String = "Google",
+    onDesktopModeChange: (Boolean) -> Unit = {},
+    onSearchEngineChange: (String) -> Unit = {},
+    onOpenDownloads: () -> Unit = {}
 ) {
-    val title = when (page) {
-        "AI" -> "AETHERON AI"
-        "Privacy" -> "Privacy & Security"
-        else -> "Settings"
-    }
+    val title = when (page) { "AI" -> "AETHERON AI"; "Privacy" -> "Privacy & Security"; else -> "Settings" }
     val subtitle = when (page) {
         "AI" -> "A thoughtful assistant for your browsing."
         "Privacy" -> "Understand and control your browser privacy."
         else -> "Make AETHERON work the way you like."
     }
+    var showSearchPicker by remember { mutableStateOf(false) }
     val items = when (page) {
         "AI" -> listOf(
             Triple("Summarize a page", "Turn long pages into key points", Icons.Default.AutoAwesome),
@@ -1373,16 +1397,16 @@ private fun AetheronFeatureScreen(
             Triple("Writing assistant", "Draft and refine your text", Icons.Default.EditNote)
         )
         "Privacy" -> listOf(
-            Triple("Safe Browsing", "Protection checks are handled by Android WebView", Icons.Default.Security),
-            Triple("Site permissions", "Review permissions when a site requests access", Icons.Default.AdminPanelSettings),
-            Triple("Clear browsing data", "Clear local history and saved browsing data", Icons.Default.DeleteSweep),
+            Triple("Safe Browsing", "Android WebView Safe Browsing is enabled", Icons.Default.Security),
+            Triple("Site permissions", "Manage Android app permissions in system settings", Icons.Default.AdminPanelSettings),
+            Triple("Clear browsing data", "History and cookies controls are being expanded", Icons.Default.DeleteSweep),
             Triple("Incognito mode", "Private isolated sessions are not implemented yet", Icons.Default.VisibilityOff)
         )
         else -> listOf(
-            Triple("Appearance", "Futuristic dark theme preview", Icons.Default.Palette),
-            Triple("Search engine", "Choose how address-bar searches are handled", Icons.Default.Search),
-            Triple("Downloads", "Downloads are managed by Android Download Manager", Icons.Default.Download),
-            Triple("Desktop site", "Request desktop layouts from supported websites", Icons.Default.DesktopWindows),
+            Triple("Appearance", "Futuristic dark theme (light theme not available yet)", Icons.Default.Palette),
+            Triple("Search engine", "Current: $searchEngine · Tap to change", Icons.Default.Search),
+            Triple("Downloads", "Open Android Download Manager", Icons.Default.Download),
+            Triple("Desktop site", if (desktopMode) "Enabled for the active tab" else "Disabled for the active tab", Icons.Default.DesktopWindows),
             Triple("Account & Sync", "Cloud sync is not connected yet", Icons.Default.CloudSync),
             Triple("About AETHERON", "Your space, your pace · Android browser", Icons.Default.Info)
         )
@@ -1397,9 +1421,7 @@ private fun AetheronFeatureScreen(
         }
         Spacer(Modifier.height(20.dp))
         if (page == "AI") {
-            Column(
-                Modifier.fillMaxWidth().background(Color(0xFF211B48), RoundedCornerShape(20.dp)).padding(17.dp)
-            ) {
+            Column(Modifier.fillMaxWidth().background(Color(0xFF211B48), RoundedCornerShape(20.dp)).padding(17.dp)) {
                 Icon(Icons.Default.AutoAwesome, null, tint = Color(0xFFC5B8FF), modifier = Modifier.size(28.dp))
                 Spacer(Modifier.height(10.dp))
                 Text("AI workspace preview", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
@@ -1409,9 +1431,18 @@ private fun AetheronFeatureScreen(
         }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(items) { item ->
+                val isDesktop = page == "Settings" && item.first == "Desktop site"
+                val isSearch = page == "Settings" && item.first == "Search engine"
+                val isDownloads = page == "Settings" && item.first == "Downloads"
                 Row(
                     Modifier.fillMaxWidth().background(Color(0xFF151B2F), RoundedCornerShape(16.dp))
-                        .padding(15.dp),
+                        .then(if (isDesktop || isSearch || isDownloads) Modifier.clickable {
+                            when {
+                                isDesktop -> onDesktopModeChange(!desktopMode)
+                                isSearch -> showSearchPicker = true
+                                isDownloads -> onOpenDownloads()
+                            }
+                        } else Modifier).padding(15.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(Modifier.size(42.dp).background(Color(0xFF25264A), RoundedCornerShape(13.dp)), contentAlignment = Alignment.Center) {
@@ -1422,10 +1453,35 @@ private fun AetheronFeatureScreen(
                         Text(item.first, color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                         Text(item.second, color = Muted, fontSize = 11.sp, lineHeight = 15.sp)
                     }
-                    Icon(Icons.Default.ChevronRight, null, tint = Muted)
+                    if (isDesktop) Switch(checked = desktopMode, onCheckedChange = onDesktopModeChange)
+                    else if (isSearch || isDownloads) Icon(Icons.Default.ChevronRight, null, tint = Muted)
                 }
             }
         }
+    }
+    if (showSearchPicker) {
+        AlertDialog(
+            onDismissRequest = { showSearchPicker = false },
+            title = { Text("Default search engine") },
+            text = {
+                Column {
+                    listOf("Google", "Bing", "DuckDuckGo").forEach { engine ->
+                        Row(Modifier.fillMaxWidth().clickable {
+                            onSearchEngineChange(engine)
+                            showSearchPicker = false
+                        }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = searchEngine == engine, onClick = {
+                                onSearchEngineChange(engine)
+                                showSearchPicker = false
+                            })
+                            Spacer(Modifier.width(8.dp))
+                            Text(engine)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showSearchPicker = false }) { Text("Close") } }
+        )
     }
 }
 
