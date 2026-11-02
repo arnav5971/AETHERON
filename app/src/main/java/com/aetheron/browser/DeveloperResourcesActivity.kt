@@ -4,6 +4,9 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -93,18 +96,27 @@ fun DeveloperResourcesScreen(
     }
     var query by remember { mutableStateOf("") }
     var selectedCategoryId by remember { mutableStateOf<String?>(null) }
+    var selectedService by remember { mutableStateOf<Pair<ResourceCategory, ResourceService>?>(null) }
+    var selectedQuickFilter by remember { mutableStateOf("all") }
+    var selectedTypeFilter by remember { mutableStateOf("all") }
     val selectedCategory = catalogue.firstOrNull { it.id == selectedCategoryId }
+    val hasActiveFilters = selectedQuickFilter != "all" || selectedTypeFilter != "all"
     val allServices = remember(catalogue) {
         catalogue.flatMap { category -> category.services.map { category to it } }
     }
-    val matchingServices = remember(query, allServices) {
-        if (query.isBlank()) emptyList()
-        else allServices.filter { (category, service) ->
-            service.name.contains(query, ignoreCase = true) ||
+    val matchingServices = remember(query, allServices, selectedQuickFilter, selectedTypeFilter) {
+        allServices.filter { (category, service) ->
+            val textMatches = query.isBlank() ||
+                service.name.contains(query, ignoreCase = true) ||
                 service.description.contains(query, ignoreCase = true) ||
                 service.freeTierNotes.contains(query, ignoreCase = true) ||
                 category.name.contains(query, ignoreCase = true) ||
                 (service.parentName?.contains(query, ignoreCase = true) == true)
+            textMatches && ResourceFilterRules.matchesQuickFilter(
+                selectedQuickFilter, category.name, service.name, service.description, service.freeTierNotes
+            ) && ResourceFilterRules.matchesTypeFilter(
+                selectedTypeFilter, category.name, service.name, service.description, service.url
+            )
         }.take(250)
     }
     val filteredCategories = remember(query, catalogue) {
@@ -119,8 +131,8 @@ fun DeveloperResourcesScreen(
     val blue = Color(0xFF3268D9)
     val card = Color(0xFFF5F8FD)
 
-    BackHandler(enabled = selectedCategory != null) {
-        selectedCategoryId = null
+    BackHandler(enabled = selectedService != null || selectedCategory != null) {
+        if (selectedService != null) selectedService = null else selectedCategoryId = null
         query = ""
     }
 
@@ -130,12 +142,14 @@ fun DeveloperResourcesScreen(
                 title = {
                     Column {
                         Text(
-                            selectedCategory?.name ?: "Free Developer Resources",
+                            selectedService?.second?.name ?: selectedCategory?.name ?: "Free Developer Resources",
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        if (selectedCategory != null) {
+                        if (selectedService != null) {
+                            Text("Service details", style = MaterialTheme.typography.labelSmall, color = muted)
+                        } else if (selectedCategory != null) {
                             Text(
                                 "${selectedCategory.services.size} listed resources",
                                 style = MaterialTheme.typography.labelSmall,
@@ -146,10 +160,11 @@ fun DeveloperResourcesScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        if (selectedCategory != null) {
-                            selectedCategoryId = null
-                            query = ""
-                        } else onBack()
+                        when {
+                            selectedService != null -> selectedService = null
+                            selectedCategory != null -> { selectedCategoryId = null; query = "" }
+                            else -> onBack()
+                        }
                     }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
@@ -160,7 +175,9 @@ fun DeveloperResourcesScreen(
         Column(
             Modifier.fillMaxSize().padding(padding).padding(horizontal = 18.dp)
         ) {
-            if (catalogue.isEmpty()) {
+            if (selectedService != null) {
+                ResourceServiceDetail(selectedService!!.first, selectedService!!.second, ink, muted, blue, onOpenService)
+            } else if (catalogue.isEmpty()) {
                 Column(
                     Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
@@ -208,17 +225,26 @@ fun DeveloperResourcesScreen(
                     },
                     shape = RoundedCornerShape(16.dp)
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(10.dp))
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("all" to "All terms", "no_card" to "No credit card", "no_signup" to "No signup", "always_free" to "Always free", "limits" to "Limit listed").forEach { (id, label) ->
+                        FilterChip(selected = selectedQuickFilter == id, onClick = { selectedQuickFilter = id }, label = { Text(label, maxLines = 1) })
+                    }
+                }
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("all" to "All types", "cloud" to "Cloud", "ai" to "AI / ML", "api" to "API", "hosting" to "Hosting").forEach { (id, label) ->
+                        FilterChip(selected = selectedTypeFilter == id, onClick = { selectedTypeFilter = id }, label = { Text(label, maxLines = 1) })
+                    }
+                }
+                Text("Filters match only details explicitly recorded in this catalogue. Always verify provider terms.", color = muted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 2.dp, bottom = 8.dp))
 
                 when {
                     selectedCategory != null -> {
                         val services = remember(selectedCategory, query) {
-                            if (query.isBlank()) selectedCategory.services
-                            else selectedCategory.services.filter {
-                                it.name.contains(query, true) ||
-                                    it.description.contains(query, true) ||
-                                    it.freeTierNotes.contains(query, true) ||
-                                    (it.parentName?.contains(query, true) == true)
+                            selectedCategory.services.filter { service ->
+                                val textMatches = query.isBlank() || service.name.contains(query, true) || service.description.contains(query, true) || service.freeTierNotes.contains(query, true) || (service.parentName?.contains(query, true) == true)
+                                textMatches && ResourceFilterRules.matchesQuickFilter(selectedQuickFilter, selectedCategory.name, service.name, service.description, service.freeTierNotes) &&
+                                    ResourceFilterRules.matchesTypeFilter(selectedTypeFilter, selectedCategory.name, service.name, service.description, service.url)
                             }
                         }
                         if (services.isEmpty()) {
@@ -229,13 +255,13 @@ fun DeveloperResourcesScreen(
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 items(services, key = { it.id }) { service ->
-                                    ResourceServiceCard(service, ink, muted, blue, card, onOpenService)
+                                    ResourceServiceCard(service, ink, muted, blue, card, onOpenService) { selectedService = selectedCategory to service }
                                 }
                                 item { CatalogueAttribution(muted) }
                             }
                         }
                     }
-                    query.isNotBlank() -> {
+                    query.isNotBlank() || hasActiveFilters -> {
                         if (matchingServices.isEmpty() && filteredCategories.isEmpty()) {
                             EmptyResourcesMessage("No matching services or categories. Try another search.", muted)
                         } else {
@@ -260,7 +286,7 @@ fun DeveloperResourcesScreen(
                                                 style = MaterialTheme.typography.labelSmall,
                                                 modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
                                             )
-                                            ResourceServiceCard(service, ink, muted, blue, card, onOpenService)
+                                            ResourceServiceCard(service, ink, muted, blue, card, onOpenService) { selectedService = category to service }
                                         }
                                     }
                                 }
@@ -347,7 +373,8 @@ private fun ResourceServiceCard(
     muted: Color,
     blue: Color,
     card: Color,
-    onOpenService: (String) -> Unit
+    onOpenService: (String) -> Unit,
+    onSelectService: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -388,6 +415,7 @@ private fun ResourceServiceCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                TextButton(onClick = onSelectService) { Text("Details", color = blue) }
                 if (service.url.startsWith("https://") || service.url.startsWith("http://")) {
                     TextButton(onClick = { onOpenService(service.url) }) {
                         Text("Open site", color = blue)
@@ -399,6 +427,52 @@ private fun ResourceServiceCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ResourceServiceDetail(
+    category: ResourceCategory,
+    service: ResourceService,
+    ink: Color,
+    muted: Color,
+    blue: Color,
+    onOpenService: (String) -> Unit
+) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
+        Text(category.name, color = blue, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(12.dp))
+        Text(service.name, color = ink, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        service.parentName?.let { Text("Listed under $it", color = muted, style = MaterialTheme.typography.labelMedium) }
+        Spacer(Modifier.height(18.dp))
+        Text("ABOUT", color = blue, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(6.dp))
+        Text(service.description, color = ink, style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(20.dp))
+        Text("FREE-TIER DETAILS", color = blue, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(6.dp))
+        Text(service.freeTierNotes.ifBlank { "No specific allowance is recorded in this catalogue entry. Check the provider's current pricing and free-tier terms." }, color = ink, style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(20.dp))
+        Text("CATEGORY", color = blue, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(6.dp))
+        Text(category.description, color = muted, style = MaterialTheme.typography.bodySmall)
+        Spacer(Modifier.height(20.dp))
+        Text("OFFICIAL ADDRESS", color = blue, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(6.dp))
+        Text(service.url, color = muted, style = MaterialTheme.typography.bodySmall)
+        if (service.url.startsWith("https://") || service.url.startsWith("http://")) {
+            Spacer(Modifier.height(16.dp))
+            Button(onClick = { onOpenService(service.url) }, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.OpenInNew, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Open official website")
+            }
+        } else {
+            Spacer(Modifier.height(8.dp))
+            Text("This entry is a technical endpoint, not a website link.", color = muted, style = MaterialTheme.typography.bodySmall)
+        }
+        Spacer(Modifier.height(18.dp))
+        CatalogueAttribution(muted)
     }
 }
 
