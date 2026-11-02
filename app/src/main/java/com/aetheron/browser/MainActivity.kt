@@ -37,6 +37,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.app.NotificationCompat
 import androidx.compose.foundation.background
@@ -297,8 +298,7 @@ class MainActivity : ComponentActivity() {
         } else {
             decor.systemUiVisibility = (
                 View.SYSTEM_UI_FLAG_FULLSCREEN or
-                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
-                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
                     View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
                     View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                 )
@@ -337,6 +337,41 @@ private val Pale = Color(0xFFEAF1FA)
 private val Green = Color(0xFF218767)
 private const val GOOGLE_HOME = "https://www.google.com"
 private const val GOOGLE_AI_MODE = "https://www.google.com/ai"
+
+/**
+ * Google blocks OAuth inside embedded WebViews. Keep Google Search, AI Mode,
+ * and Google account/consent pages in a browser-owned Custom Tab so sign-in
+ * uses the user's real browser cookies and security surface.
+ */
+internal fun shouldOpenInTrustedBrowser(rawUrl: String): Boolean = runCatching {
+    val uri = java.net.URI(rawUrl)
+    val host = uri.host?.lowercase()?.trimEnd('.') ?: return@runCatching false
+    uri.scheme.equals("https", ignoreCase = true) && host in setOf(
+        "google.com",
+        "www.google.com",
+        "accounts.google.com",
+        "consent.google.com",
+        "myaccount.google.com"
+    )
+}.getOrDefault(false)
+
+private fun openGoogleInCustomTab(context: Context, url: String) {
+    try {
+        val customTab = CustomTabsIntent.Builder()
+            .setShowTitle(true)
+            .setToolbarColor(android.graphics.Color.rgb(24, 34, 53))
+            .build()
+        customTab.launchUrl(context, Uri.parse(url))
+    } catch (_: Exception) {
+        try {
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        } catch (_: Exception) {
+            Toast.makeText(context, "Unable to open Google in a secure browser", Toast.LENGTH_LONG).show()
+        }
+    }
+}
 /**
  * Android WebView keeps the physical phone width as the CSS viewport when a
  * site declares width=device-width. A desktop User-Agent alone therefore does
@@ -475,6 +510,10 @@ private fun AetheronBrowser(context: Context) {
 
     fun navigate(raw: String) {
         val target = BrowserAddress.resolve(raw)
+        if (shouldOpenInTrustedBrowser(target)) {
+            openGoogleInCustomTab(context, target)
+            return
+        }
         address = target
         currentUrl = target
         page = "Web"
@@ -597,8 +636,7 @@ private fun AetheronBrowser(context: Context) {
                     Icon(Icons.Default.Search, null, tint = Muted, modifier = Modifier.size(22.dp))
                     Spacer(Modifier.width(8.dp))
                     BasicTextField(                        value = address,
-                        onValueChange = { address = it },
-                        modifier = Modifier.weight(1f),
+                        onValueChange = { address = it },                        modifier = Modifier.weight(1f),
                         singleLine = true,
                         textStyle = TextStyle(color = Ink, fontSize = 14.sp),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
@@ -703,6 +741,10 @@ private fun AetheronBrowser(context: Context) {
                                     }
                                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                                         val uri = request.url
+                                        if (shouldOpenInTrustedBrowser(uri.toString())) {
+                                            openGoogleInCustomTab(context, uri.toString())
+                                            return true
+                                        }
                                         if (uri.scheme.equals("http", true) || uri.scheme.equals("https", true)) return false
                                         return openExternalUri(context, uri)
                                     }
@@ -710,6 +752,10 @@ private fun AetheronBrowser(context: Context) {
                                     @Deprecated("Deprecated in Android")
                                     override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                                         val uri = Uri.parse(url)
+                                        if (shouldOpenInTrustedBrowser(url)) {
+                                            openGoogleInCustomTab(context, url)
+                                            return true
+                                        }
                                         if (uri.scheme.equals("http", true) || uri.scheme.equals("https", true)) return false
                                         return openExternalUri(context, uri)
                                     }
@@ -897,8 +943,7 @@ private fun HomeScreen(
                     text = "A little more room\nto roam.",
                     modifier = Modifier.fillMaxWidth(),
                     color = Ink, fontSize = 36.sp, lineHeight = 43.sp, fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
+                    textAlign = TextAlign.Center                )
                 Spacer(Modifier.height(22.dp))
                 Text("A calmer, faster place to explore the web.", modifier = Modifier.fillMaxWidth(),
                     color = Muted, fontSize = 16.sp, textAlign = TextAlign.Center)
