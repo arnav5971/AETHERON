@@ -119,9 +119,10 @@ fun DeveloperResourcesScreen(
             )
         }.take(250)
     }
-    val filteredCategories = remember(query, catalogue) {
-        if (query.isBlank()) catalogue
-        else catalogue.filter {
+    val filteredCategories = remember(query, catalogue, hasActiveFilters) {
+        if (query.isBlank()) {
+            if (hasActiveFilters) emptyList() else catalogue
+        } else catalogue.filter {
             it.name.contains(query, ignoreCase = true) ||
                 it.description.contains(query, ignoreCase = true)
         }
