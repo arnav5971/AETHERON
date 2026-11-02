@@ -266,7 +266,9 @@ class MainActivity : ComponentActivity() {
         window.statusBarColor = android.graphics.Color.rgb(9, 7, 37)
         @Suppress("DEPRECATION")
         window.decorView.systemUiVisibility =
-            window.decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_FULLSCREEN.inv()
+            window.decorView.systemUiVisibility and
+                View.SYSTEM_UI_FLAG_FULLSCREEN.inv() and
+                View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
         setContent { AetheronBrowser(this) }
     }
 
