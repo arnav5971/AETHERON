@@ -55,6 +55,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -492,23 +493,23 @@ private class BrowserStore(context: Context) {
 @Composable
 private fun AetheronBrowser(context: Context) {
     val store = remember { BrowserStore(context) }
-    var address by remember { mutableStateOf("") }
-    var currentTitle by remember { mutableStateOf("New tab") }
-    var currentUrl by remember { mutableStateOf("") }
+    var address by rememberSaveable { mutableStateOf("") }
+    var currentTitle by rememberSaveable { mutableStateOf("New tab") }
+    var currentUrl by rememberSaveable { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
     var progress by remember { mutableIntStateOf(0) }
     var canBack by remember { mutableStateOf(false) }
     var canForward by remember { mutableStateOf(false) }
-    var desktop by remember { mutableStateOf(false) }
+    var desktop by rememberSaveable { mutableStateOf(false) }
     var isVideoFullscreen by remember { mutableStateOf(false) }
     var webView by remember { mutableStateOf<WebView?>(null) }
-    var page by remember { mutableStateOf("Home") }
+    var page by rememberSaveable { mutableStateOf("Home") }
     var menuOpen by remember { mutableStateOf(false) }
     var showTabs by remember { mutableStateOf(false) }
     var bookmarks by remember { mutableStateOf(store.read("bookmarks")) }
     var history by remember { mutableStateOf(store.read("history").take(100)) }
     val tabCount = 1
-    var tabTitle by remember { mutableStateOf("New tab") }
+    var tabTitle by rememberSaveable { mutableStateOf("New tab") }
 
     fun navigate(raw: String) {
         val target = BrowserAddress.resolve(raw)
