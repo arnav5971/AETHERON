@@ -263,6 +263,10 @@ class MainActivity : ComponentActivity() {
                 callback.onReceiveValue(uris)
             }
         }
+        window.statusBarColor = android.graphics.Color.rgb(9, 7, 37)
+        @Suppress("DEPRECATION")
+        window.decorView.systemUiVisibility =
+            window.decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_FULLSCREEN.inv()
         setContent { AetheronBrowser(this) }
     }
 
@@ -1031,8 +1035,6 @@ private fun AetheronBrowser(context: Context) {
                         onQuick = { navigate(it) },
                         onBookmarks = { page = "Saved" },
                         onHistory = { page = "History" },
-                        onAi = { page = "AI" },
-                        onResources = { page = "Resources" },
                         onPrivacy = { page = "Privacy" },
                         onDownloads = {
                             try { context.startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) }
@@ -1152,8 +1154,6 @@ private fun HomeScreen(
     onQuick: (String) -> Unit,
     onBookmarks: () -> Unit,
     onHistory: () -> Unit,
-    onAi: () -> Unit,
-    onResources: () -> Unit,
     onPrivacy: () -> Unit,
     onDownloads: () -> Unit,
     onSettings: () -> Unit
@@ -1167,8 +1167,8 @@ private fun HomeScreen(
         Triple("Wikipedia", Icons.Default.MenuBook, "https://www.wikipedia.org")
     )
     val tools = listOf(
-        Triple("Developer\nTools", Icons.Default.RocketLaunch, onResources),
-        Triple("Privacy &\nSecurity", Icons.Default.Shield, onPrivacy),
+        Triple("Bookmarks", Icons.Default.Bookmarks, onBookmarks),
+        Triple("History", Icons.Default.History, onHistory),
         Triple("Downloads", Icons.Default.Download, onDownloads),
         Triple("Settings", Icons.Default.Settings, onSettings)
     )
@@ -1193,7 +1193,7 @@ private fun HomeScreen(
         ) {
             Spacer(Modifier.height(10.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Menu, "Menu", tint = Color(0xFFC7A5FF), modifier = Modifier.size(27.dp))
+                Text("AETHERON", color = Color(0xFFFFD34D), fontWeight = FontWeight.Bold, fontSize = 13.sp, letterSpacing = 1.2.sp)
                 Spacer(Modifier.weight(1f))
                 Surface(
                     color = Color(0xFF33250C),
@@ -1244,77 +1244,13 @@ private fun HomeScreen(
             Spacer(Modifier.height(20.dp))
             // Four responsive quick-site shortcuts.
             shortcuts.chunked(4).forEach { group ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    group.forEach { item ->
-                        Column(
-                            Modifier.weight(1f).clickable { onQuick(item.third) }.padding(vertical = 5.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Box(
-                                Modifier.size(66.dp).background(
-                                    androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF25215B), Color(0xFF101C45))),
-                                    RoundedCornerShape(21.dp)
-                                ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(item.second, null, tint = if (item.first == "YouTube") Color(0xFFFF4C69) else cyan, modifier = Modifier.size(34.dp))
-                            }
-                            Spacer(Modifier.height(6.dp))
-                            Text(item.first, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                        }
-                    }
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                listOf(
-                    Triple("AI Assistant", Icons.Default.AutoAwesome, onAi),
-                    Triple("Tools", Icons.Default.Build, onResources),
-                    Triple("Bookmarks", Icons.Default.Star, onBookmarks),
-                    Triple("History", Icons.Default.History, onHistory)
-                ).forEach { item ->
-                    Column(Modifier.weight(1f).clickable { item.third() }.padding(vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(Modifier.size(62.dp).background(Color(0xFF21194F), RoundedCornerShape(20.dp)), contentAlignment = Alignment.Center) {
-                            Icon(item.second, null, tint = violet, modifier = Modifier.size(31.dp))
-                        }
-                        Spacer(Modifier.height(5.dp))
-                        Text(item.first, color = Color.White, fontSize = 10.sp, maxLines = 1)
-                    }
-                }
-            }
-            Spacer(Modifier.height(16.dp))
-            Row(
-                Modifier.fillMaxWidth().height(132.dp)
-                    .background(
-                        androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF24115A), Color(0xFF102B62), Color(0xFF071D42))),
-                        RoundedCornerShape(24.dp)
-                    )
-                    .clickable(onClick = onAi).padding(17.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(Modifier.size(74.dp).background(Color(0xFF342B80), CircleShape), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.SmartToy, null, tint = Color(0xFF9BEAFF), modifier = Modifier.size(52.dp))
-                }
-                Spacer(Modifier.width(13.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("AETHERON AI", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(4.dp))
-                    Text("Ask anything, get instant answers...", color = Color(0xFFC6C9F4), fontSize = 10.sp, maxLines = 2)
-                    Spacer(Modifier.height(10.dp))
-                    Surface(color = Color(0xFF8B3DFA), shape = RoundedCornerShape(22.dp)) {
-                        Text("Chat Now  →", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp,
-                            modifier = Modifier.clickable(onClick = onAi).padding(horizontal = 18.dp, vertical = 8.dp))
-                    }
-                }
-                Icon(Icons.Default.ChevronRight, null, tint = Color.White)
-            }
-            Spacer(Modifier.height(18.dp))
+                Spacer(Modifier.height(18.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Bolt, null, tint = Color(0xFFFFC928), modifier = Modifier.size(23.dp))
                 Spacer(Modifier.width(7.dp))
-                Text("Quick Access", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                Text("Your browser", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
-                Text("See All  →", color = Color(0xFFAD8BFF), fontSize = 12.sp, modifier = Modifier.clickable(onClick = onResources))
+                Text("Quick actions", color = Color(0xFFAD8BFF), fontSize = 11.sp)
             }
             Spacer(Modifier.height(10.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
