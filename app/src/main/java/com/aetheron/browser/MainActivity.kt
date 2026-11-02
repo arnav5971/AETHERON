@@ -1126,19 +1126,19 @@ private fun HomeScreen(
     var query by rememberSaveable { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
 
-    val ink = Color(0xFF343052)
-    val muted = Color(0xFF8581A5)
-    val lavender = Color(0xFF8E83D9)
-    val paleLavender = Color(0xFFECE9FF)
-    val card = Color(0xF9FFFFFF)
-    val shortcuts = listOf(
+    val ink = Color(0xFF17105F)
+    val muted = Color(0xFF6567A6)
+    val purple = Color(0xFF8B2BFA)
+    val blue = Color(0xFF159CEB)
+    val glass = Color(0xDFFFFFFF)
+    val sites = listOf(
         Triple("Google", Icons.Default.Search, "https://www.google.com"),
         Triple("YouTube", Icons.Default.PlayArrow, "https://m.youtube.com"),
         Triple("GitHub", Icons.Default.Code, "https://github.com"),
         Triple("Wikipedia", Icons.Default.MenuBook, "https://www.wikipedia.org")
     )
     val actions = listOf(
-        Triple("Bookmarks", Icons.Default.Bookmarks, onBookmarks),
+        Triple("Bookmarks", Icons.Default.Bookmark, onBookmarks),
         Triple("History", Icons.Default.History, onHistory),
         Triple("Downloads", Icons.Default.Download, onDownloads),
         Triple("Settings", Icons.Default.Settings, onSettings)
@@ -1147,210 +1147,206 @@ private fun HomeScreen(
     Column(
         Modifier.fillMaxSize().background(
             androidx.compose.ui.graphics.Brush.verticalGradient(
-                listOf(Color(0xFFF2F0FF), Color(0xFFE9F1FF), Color(0xFFF8F7FF))
+                listOf(Color(0xFF172A83), Color(0xFF8DBBFF), Color(0xFFF1DFFF), Color(0xFFF8E9FF))
             )
         )
     ) {
         Column(
             Modifier.weight(1f).fillMaxWidth().verticalScroll(ScrollState(0))
-                .padding(horizontal = 18.dp)
         ) {
-            Spacer(Modifier.height(12.dp))
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            // Dreamy night-sky hero. The Android status bar remains outside this content.
+            Box(
+                Modifier.fillMaxWidth().height(245.dp).background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        listOf(Color(0xFF10236E), Color(0xFF315CCB), Color(0xFF9ABFFF))
+                    )
+                )
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier.size(38.dp).background(
-                            androidx.compose.ui.graphics.Brush.linearGradient(
-                                listOf(Color(0xFFB7AFFF), Color(0xFF91B8F5))
-                            ),
-                            RoundedCornerShape(14.dp)
-                        ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Public, null, tint = Color.White, modifier = Modifier.size(23.dp))
+                Text("✦     ·       ✧       ·      ✦       ·       ✧", color = Color(0xFFFFD9FF), fontSize = 13.sp,
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 13.dp))
+                Text("☾", color = Color(0xFFFFE9B8), fontSize = 82.sp,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 17.dp, end = 24.dp))
+                Box(
+                    Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 25.dp)
+                        .size(48.dp).background(Color(0xFF6324B8).copy(alpha = .8f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) { Text("☾", color = Color.White, fontSize = 25.sp) }
+
+                Column(
+                    Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(top = 48.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.height(74.dp).width(100.dp)) {
+                        Text("A", color = Color(0xFFB57BFF), fontSize = 78.sp, fontWeight = FontWeight.Light)
+                        Text("⌁", color = Color(0xFF00D8FF), fontSize = 68.sp, modifier = Modifier.offset(x = 9.dp, y = 2.dp))
                     }
-                    Spacer(Modifier.width(9.dp))
-                    Text("AETHERON", color = ink, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.1.sp)
+                    Text("AETHERON", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+                    Text("—  Browse Beyond Limits  —", color = Color(0xFFE8E9FF), fontSize = 12.sp, letterSpacing = 1.5.sp)
                 }
-                Spacer(Modifier.weight(1f))
-                Text("☾", color = lavender, fontSize = 25.sp)
-            }
 
-            Spacer(Modifier.height(23.dp))
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text("A little space", color = ink, fontSize = 27.sp, fontWeight = FontWeight.ExtraBold)
-                    Text("for your big adventures ✨", color = muted, fontSize = 13.sp)
-                    Spacer(Modifier.height(8.dp))
-                    Text("Browse • Explore • Create", color = lavender, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                }
+                // Cat resting on a soft cloud bank.
+                Text("♡", color = Color(0xFFFFD8F5), fontSize = 28.sp,
+                    modifier = Modifier.align(Alignment.CenterStart).padding(start = 89.dp, top = 4.dp))
                 Box(
-                    Modifier.size(104.dp).background(
-                        androidx.compose.ui.graphics.Brush.linearGradient(
-                            listOf(Color(0xFFE3DFFF), Color(0xFFDDEEFF))
-                        ),
-                        CircleShape
-                    ),
+                    Modifier.align(Alignment.BottomStart).padding(start = 22.dp, bottom = 0.dp)
+                        .size(width = 132.dp, height = 83.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("🐱", fontSize = 48.sp)
-                    Text("✦", color = Color(0xFFFFC86A), fontSize = 19.sp,
-                        modifier = Modifier.align(Alignment.TopEnd).padding(12.dp))
-                    Text("☾", color = Color(0xFF9B8CE0), fontSize = 20.sp,
-                        modifier = Modifier.align(Alignment.BottomStart).padding(12.dp))
+                    Text("☁", color = Color(0xFFEAF0FF), fontSize = 104.sp)
+                    Text("🐱", fontSize = 62.sp, modifier = Modifier.offset(y = (-8).dp))
                 }
-            }
-
-            Spacer(Modifier.height(22.dp))
-            Row(
-                Modifier.fillMaxWidth().height(56.dp)
-                    .background(card, RoundedCornerShape(22.dp))
-                    .clickable { showSearch = true }
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.Search, null, tint = lavender, modifier = Modifier.size(22.dp))
-                Spacer(Modifier.width(11.dp))
-                Text("Search or enter a website", color = muted, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                Box(
-                    Modifier.size(34.dp).background(paleLavender, CircleShape),
-                    contentAlignment = Alignment.Center
+                Row(
+                    Modifier.align(Alignment.BottomEnd).padding(end = 0.dp, bottom = 0.dp),
+                    verticalAlignment = Alignment.Bottom
                 ) {
-                    Icon(Icons.Default.ArrowForward, "Search", tint = lavender, modifier = Modifier.size(18.dp))
+                    repeat(4) { index ->
+                        Box(Modifier.size((52 + index * 8).dp).offset(x = (-10 * index).dp)
+                            .background(Color(0xFFEAF1FF).copy(alpha = .92f), CircleShape))
+                    }
                 }
             }
 
-            Spacer(Modifier.height(23.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Quick websites", color = ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.weight(1f))
-                Text("Your favourites", color = muted, fontSize = 11.sp)
-            }
-            Spacer(Modifier.height(11.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                shortcuts.chunked(2).forEach { pair ->
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                        pair.forEach { item ->
-                            Row(
-                                Modifier.weight(1f).height(58.dp)
-                                    .background(card, RoundedCornerShape(17.dp))
-                                    .clickable { onQuick(item.third) }
-                                    .padding(horizontal = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    Modifier.fillMaxWidth().height(54.dp)
+                        .background(Color(0xF7FFFFFF), RoundedCornerShape(32.dp))
+                        .clickable { showSearch = true }.padding(horizontal = 19.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Search, null, tint = ink, modifier = Modifier.size(25.dp))
+                    Spacer(Modifier.width(14.dp))
+                    Text("Search or enter URL...", color = Color(0xFF8588B9), fontSize = 14.sp,
+                        modifier = Modifier.weight(1f))
+                    Icon(Icons.Default.Mic, "Voice search", tint = ink, modifier = Modifier.size(24.dp)
+                        .clickable { showSearch = true })
+                    Spacer(Modifier.width(17.dp))
+                    Icon(Icons.Default.CenterFocusStrong, "Scan", tint = ink, modifier = Modifier.size(24.dp)
+                        .clickable { showSearch = true })
+                }
+
+                Spacer(Modifier.height(17.dp))
+                Column(Modifier.fillMaxWidth().background(glass, RoundedCornerShape(25.dp)).padding(15.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Bolt, null, tint = purple, modifier = Modifier.size(24.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Text("Quick Websites", color = ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.weight(1f))
+                        Text("See All  ›", color = purple, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        sites.forEachIndexed { index, item ->
+                            Column(Modifier.weight(1f).clickable { onQuick(item.third) },
+                                horizontalAlignment = Alignment.CenterHorizontally) {
                                 Box(
-                                    Modifier.size(35.dp).background(paleLavender, RoundedCornerShape(12.dp)),
+                                    Modifier.fillMaxWidth().height(54.dp)
+                                        .background(Color.White.copy(alpha = .67f), RoundedCornerShape(17.dp)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(item.second, null, tint = lavender, modifier = Modifier.size(20.dp))
+                                    when (index) {
+                                        0 -> Text("G", color = Color(0xFF4285F4), fontSize = 37.sp, fontWeight = FontWeight.Bold)
+                                        1 -> Box(Modifier.size(width = 39.dp, height = 25.dp).background(Color.Red, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.PlayArrow, null, tint = Color.White, modifier = Modifier.size(22.dp))
+                                        }
+                                        2 -> Text("●", color = Color.Black, fontSize = 35.sp)
+                                        else -> Text("W", color = Color.Black, fontSize = 34.sp, fontWeight = FontWeight.Light)
+                                    }
                                 }
-                                Spacer(Modifier.width(9.dp))
-                                Text(item.first, color = ink, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                Spacer(Modifier.height(5.dp))
+                                Text(item.first, color = ink, fontSize = 10.sp, maxLines = 1)
                             }
                         }
                     }
                 }
-            }
 
-            Spacer(Modifier.height(22.dp))
-            Text("Quick actions", color = ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(11.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                actions.forEachIndexed { index, item ->
-                    Column(
-                        Modifier.weight(1f).height(91.dp)
-                            .background(card, RoundedCornerShape(17.dp))
-                            .clickable { item.third() }
-                            .padding(horizontal = 3.dp, vertical = 12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Box(
-                            Modifier.size(37.dp).background(
-                                listOf(Color(0xFFEDE9FF), Color(0xFFE4F2FF), Color(0xFFFFF0E6), Color(0xFFE9F6F0))[index],
-                                CircleShape
-                            ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(item.second, null, tint = listOf(Color(0xFF8E83D9), Color(0xFF78A9D8), Color(0xFFE6A16D), Color(0xFF77B69A))[index], modifier = Modifier.size(20.dp))
+                Spacer(Modifier.height(15.dp))
+                Column(Modifier.fillMaxWidth().background(glass, RoundedCornerShape(25.dp)).padding(15.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.GridView, null, tint = purple, modifier = Modifier.size(23.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Text("Quick Actions", color = ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.weight(1f))
+                        Text("See All  ›", color = purple, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        actions.forEachIndexed { index, item ->
+                            Column(
+                                Modifier.weight(1f).height(75.dp).background(Color.White.copy(alpha = .56f), RoundedCornerShape(18.dp))
+                                    .clickable { item.third() },
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(item.second, null, tint = listOf(purple, Color(0xFF5942D7), blue, Color(0xFF7646E8))[index],
+                                    modifier = Modifier.size(31.dp))
+                                Spacer(Modifier.height(5.dp))
+                                Text(item.first, color = ink, fontSize = 10.sp, maxLines = 1)
+                            }
                         }
-                        Spacer(Modifier.height(7.dp))
-                        Text(item.first, color = ink, fontSize = 9.sp, maxLines = 1)
                     }
                 }
-            }
 
-            Spacer(Modifier.height(18.dp))
-            Row(
-                Modifier.fillMaxWidth().background(card, RoundedCornerShape(18.dp))
-                    .clickable(onClick = onPrivacy).padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    Modifier.size(42.dp).background(Color(0xFFE7F5EF), RoundedCornerShape(14.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Security, null, tint = Color(0xFF65A88C), modifier = Modifier.size(23.dp))
+                Spacer(Modifier.height(15.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(
+                        Modifier.weight(1f).height(132.dp)
+                            .background(Color(0xD8D8F5FF), RoundedCornerShape(25.dp))
+                            .clickable(onClick = onPrivacy).padding(13.dp),
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Security, null, tint = Color(0xFF087FD5), modifier = Modifier.size(31.dp))
+                            Spacer(Modifier.width(7.dp))
+                            Text("Privacy & Security", color = Color(0xFF123DA9), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Text("Keep your browsing private & secure", color = muted, fontSize = 10.sp, lineHeight = 15.sp)
+                        Text("Manage  →", color = Color.White, fontSize = 11.sp, modifier = Modifier
+                            .background(Color(0xFF38B5F6), RoundedCornerShape(22.dp)).padding(horizontal = 14.dp, vertical = 7.dp))
+                    }
+                    Column(
+                        Modifier.weight(1f).height(132.dp)
+                            .background(Color(0xDFF7E5FF), RoundedCornerShape(25.dp))
+                            .clickable(onClick = onSettings).padding(13.dp),
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Settings, null, tint = purple, modifier = Modifier.size(31.dp))
+                            Spacer(Modifier.width(7.dp))
+                            Text("App Settings", color = ink, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Text("Customize your browser experience", color = muted, fontSize = 10.sp, lineHeight = 15.sp)
+                        Text("Open Settings  →", color = purple, fontSize = 11.sp, modifier = Modifier
+                            .background(Color(0xFFE7A9FF), RoundedCornerShape(22.dp)).padding(horizontal = 12.dp, vertical = 7.dp))
+                    }
                 }
-                Spacer(Modifier.width(11.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("Privacy & Security", color = ink, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    Text("Your browsing, your choice", color = muted, fontSize = 10.sp)
-                }
-                Icon(Icons.Default.ChevronRight, null, tint = muted)
+                Spacer(Modifier.height(16.dp))
             }
-
-            Spacer(Modifier.height(10.dp))
-            Row(
-                Modifier.fillMaxWidth().background(card, RoundedCornerShape(18.dp))
-                    .clickable(onClick = onSettings).padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    Modifier.size(42.dp).background(Color(0xFFEDE9FF), RoundedCornerShape(14.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Settings, null, tint = lavender, modifier = Modifier.size(23.dp))
-                }
-                Spacer(Modifier.width(11.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("App Settings", color = ink, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    Text("Make AETHERON yours", color = muted, fontSize = 10.sp)
-                }
-                Icon(Icons.Default.ChevronRight, null, tint = muted)
-            }
-            Spacer(Modifier.height(18.dp))
         }
 
         Row(
-            Modifier.fillMaxWidth().height(66.dp)
-                .background(Color(0xF8FFFFFF))
-                .navigationBarsPadding()
-                .padding(horizontal = 5.dp),
+            Modifier.fillMaxWidth().height(76.dp).background(Color(0xF8FFFFFF), RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
+                .navigationBarsPadding().padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
             @Composable
-            fun NavItem(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
+            fun NavItem(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit, selected: Boolean = false) {
                 Column(
                     Modifier.weight(1f).fillMaxHeight().clickable(onClick = onClick),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Icon(icon, label, tint = lavender, modifier = Modifier.size(21.dp))
+                    Icon(icon, label, tint = if (selected) purple else ink, modifier = Modifier.size(25.dp))
                     Spacer(Modifier.height(3.dp))
-                    Text(label, color = ink, fontSize = 9.sp, fontWeight = FontWeight.Medium)
+                    Text(label, color = if (selected) purple else ink, fontSize = 10.sp,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
+                    if (selected) Spacer(Modifier.height(2.dp))
                 }
             }
-            NavItem("Home", Icons.Default.Home) { }
-            NavItem("Bookmarks", Icons.Default.BookmarkBorder, onBookmarks)
-            NavItem("History", Icons.Default.History, onHistory)
+            NavItem("Home", Icons.Default.Home, {}, true)
+            NavItem("Bookmarks", Icons.Default.StarBorder, onBookmarks)
+            NavItem("History", Icons.Default.AccessTime, onHistory)
             NavItem("Downloads", Icons.Default.Download, onDownloads)
             NavItem("Settings", Icons.Default.Settings, onSettings)
         }
@@ -1374,13 +1370,12 @@ private fun HomeScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = { if (query.isNotBlank()) { showSearch = false; onSearch(query) } }) { Text("Go", color = lavender) }
+                TextButton(onClick = { if (query.isNotBlank()) { showSearch = false; onSearch(query) } }) { Text("Go", color = purple) }
             },
             dismissButton = { TextButton(onClick = { showSearch = false }) { Text("Cancel", color = muted) } }
         )
     }
 }
-
 @Composable
 private fun AetheronFeatureScreen(
     page: String,
