@@ -73,8 +73,8 @@ import org.json.JSONObject
 class MainActivity : ComponentActivity() {
     private var fullscreenView: View? = null
     private var fullscreenCallback: WebChromeClient.CustomViewCallback? = null
-    private var activeWebView: WebView? = null
-    private val popupWebViews = mutableSetOf<WebView>()
+    internal var activeWebView: WebView? = null
+    internal val popupWebViews = mutableSetOf<WebView>()
     private var previousSystemUiVisibility: Int = 0
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
     private lateinit var fileChooserLauncher: ActivityResultLauncher<Intent>
