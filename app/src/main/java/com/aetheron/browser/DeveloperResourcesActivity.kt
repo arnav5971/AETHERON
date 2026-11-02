@@ -28,22 +28,9 @@ private data class ResourceCategory(
     val anchor: String
 )
 
-class DeveloperResourcesActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme {
-                DeveloperResourcesScreen(onBack = { finish() }, onOpenCategory = { anchor ->
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ripienaar/free-for-dev#$anchor")))
-                })
-            }
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DeveloperResourcesScreen(
+fun DeveloperResourcesScreen(
     onBack: () -> Unit,
     onOpenCategory: (String) -> Unit
 ) {
