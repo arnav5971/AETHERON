@@ -14,6 +14,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.net.http.SslError
 import android.os.Bundle
+import android.os.Message
 import android.os.Environment
 import android.webkit.DownloadListener
 import android.webkit.GeolocationPermissions
@@ -719,8 +720,11 @@ private fun AetheronBrowser(context: Context) {
                                 settings.allowContentAccess = false
                                 settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
                                 settings.safeBrowsingEnabled = true
-                                settings.javaScriptCanOpenWindowsAutomatically = false
-                                settings.setSupportMultipleWindows(false)
+                                // Allow user-initiated target=_blank / window.open flows.
+                                // The popup handler below routes Google OAuth to a trusted browser
+                                // and keeps ordinary web popups inside AETHERON.
+                                settings.javaScriptCanOpenWindowsAutomatically = true
+                                settings.setSupportMultipleWindows(true)
                                 settings.databaseEnabled = true
                                 settings.cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
                                 tag = settings.userAgentString
@@ -768,6 +772,82 @@ private fun AetheronBrowser(context: Context) {
                                     }
                                 }
                                 webChromeClient = object : WebChromeClient() {
+                                    override fun onCreateWindow(
+                                        view: WebView,
+                                        isDialog: Boolean,
+                                        isUserGesture: Boolean,
+                                        resultMsg: Message
+                                    ): Boolean {
+                                        // Do not allow unsolicited/scripted popups.
+                                        if (!isUserGesture) return false
+
+                                        val popup = WebView(view.context).apply {
+                                            layoutParams = ViewGroup.LayoutParams(1, 1)
+                                            alpha = 0f
+                                            settings.javaScriptEnabled = true
+                                            settings.domStorageEnabled = true
+                                            settings.javaScriptCanOpenWindowsAutomatically = false
+                                            settings.setSupportMultipleWindows(false)
+                                        }
+                                        var routed = false
+                                        fun routePopup(url: String, popupView: WebView) {
+                                            if (routed || url == "about:blank") return
+                                            routed = true
+                                            when {
+                                                shouldOpenInTrustedBrowser(url) ->
+                                                    openGoogleInCustomTab(context, url)
+                                                Uri.parse(url).scheme.equals("http", true) ||
+                                                    Uri.parse(url).scheme.equals("https", true) ->
+                                                    view.loadUrl(url)
+                                                else -> openExternalUri(context, Uri.parse(url))
+                                            }
+                                            popupView.post {
+                                                popupView.stopLoading()
+                                                (popupView.parent as? ViewGroup)?.removeView(popupView)
+                                                popupView.destroy()
+                                            }
+                                        }
+                                        popup.webViewClient = object : WebViewClient() {
+                                            override fun shouldOverrideUrlLoading(
+                                                popupView: WebView,
+                                                request: WebResourceRequest
+                                            ): Boolean {
+                                                routePopup(request.url.toString(), popupView)
+                                                return true
+                                            }
+
+                                            @Deprecated("Deprecated in Android")
+                                            override fun shouldOverrideUrlLoading(
+                                                popupView: WebView,
+                                                url: String
+                                            ): Boolean {
+                                                routePopup(url, popupView)
+                                                return true
+                                            }
+
+                                            override fun onPageStarted(
+                                                popupView: WebView,
+                                                url: String?,
+                                                favicon: Bitmap?
+                                            ) {
+                                                if (!url.isNullOrBlank()) routePopup(url, popupView)
+                                            }
+                                        }
+                                        // Attach the temporary WebView so Chromium can complete
+                                        // the popup handshake; it is removed as soon as its URL
+                                        // is handed to the main tab or the trusted browser.
+                                        view.addView(popup)
+                                        val transport = resultMsg.obj as? WebView.WebViewTransport
+                                            ?: run {
+                                                view.removeView(popup)
+                                                popup.destroy()
+                                                return false
+                                            }
+                                        transport.webView = popup
+                                        resultMsg.sendToTarget()
+                                        return true
+                                    }
+
                                     override fun onProgressChanged(view: WebView, newProgress: Int) {
                                         progress = newProgress
                                         loading = newProgress < 100
