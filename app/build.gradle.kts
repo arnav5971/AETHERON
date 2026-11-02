@@ -32,6 +32,7 @@ dependencies {
     implementation(platform("androidx.compose:compose-bom:2025.02.00"))
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("androidx.browser:browser:1.8.0")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.foundation:foundation")
