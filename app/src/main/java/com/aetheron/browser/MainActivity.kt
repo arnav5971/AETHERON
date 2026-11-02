@@ -41,6 +41,15 @@ import androidx.activity.compose.setContent
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.app.NotificationCompat
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.Stroke
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -273,7 +282,7 @@ class MainActivity : ComponentActivity() {
             android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
             android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
         )
-        setContent { AetheronBrowser(this) }
+        setContent { AetheronAppRoot(this) }
     }
 
     fun openFileChooser(callback: ValueCallback<Array<Uri>>, params: WebChromeClient.FileChooserParams): Boolean {
@@ -1416,5 +1425,150 @@ private fun BottomItem(label: String, icon: androidx.compose.ui.graphics.vector.
         }
         Spacer(Modifier.height(4.dp))
         Text(label, color = if (selected) Blue else Muted, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
+    }
+}
+
+@Composable
+private fun AetheronAppRoot(activity: MainActivity) {
+    var showSplash by rememberSaveable { mutableStateOf(true) }
+    if (showSplash) {
+        AetheronSplashScreen(onFinished = { showSplash = false })
+    } else {
+        AetheronBrowser(activity)
+    }
+}
+
+@Composable
+private fun AetheronSplashScreen(onFinished: () -> Unit) {
+    val progress = remember { Animatable(0f) }
+    val pulse = remember { Animatable(0.72f) }
+    LaunchedEffect(Unit) {
+        launch {
+            progress.animateTo(1f, animationSpec = tween(2300))
+            delay(180)
+            onFinished()
+        }
+        launch {
+            while (true) {
+                pulse.animateTo(1f, tween(900))
+                pulse.animateTo(0.72f, tween(900))
+            }
+        }
+    }
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize().background(
+            Brush.verticalGradient(
+                listOf(Color(0xFF05051D), Color(0xFF170A48), Color(0xFF080923))
+            )
+        ),
+        contentAlignment = Alignment.Center
+    ) {
+        val w = maxWidth
+        val h = maxHeight
+        Canvas(Modifier.fillMaxSize()) {
+            val sx = size.width
+            val sy = size.height
+            // Star field and soft moon glow
+            for (i in 0..54) {
+                val x = ((i * 73 + 29) % 997) / 997f * sx
+                val y = ((i * 137 + 41) % 991) / 991f * sy
+                val radius = if (i % 7 == 0) 2.2f else 1.15f
+                drawCircle(Color(0x99E8DFFF), radius, Offset(x, y))
+            }
+            drawCircle(
+                Brush.radialGradient(listOf(Color(0x66D9B8FF), Color.Transparent)),
+                radius = sx * 0.39f,
+                center = Offset(sx * 0.5f, sy * 0.265f)
+            )
+            drawCircle(Color(0xFFE9D8FF), sx * 0.235f, Offset(sx * 0.5f, sy * 0.245f))
+            drawCircle(Color(0xFFBFA6F8), sx * 0.222f, Offset(sx * 0.5f, sy * 0.245f))
+            drawCircle(Color(0xFFE8D9FF), sx * 0.214f, Offset(sx * 0.5f, sy * 0.245f))
+            // Planet at the lower edge of the mascot
+            drawCircle(
+                Brush.radialGradient(
+                    listOf(Color(0xFF4E4AD0), Color(0xFF15145B), Color(0xFF070725)),
+                    center = Offset(sx * 0.43f, sy * 0.48f),
+                    radius = sx * 0.47f
+                ),
+                sx * 0.39f,
+                Offset(sx * 0.5f, sy * 0.515f)
+            )
+            drawCircle(Color(0xFFB77BFF), sx * 0.39f, Offset(sx * 0.5f, sy * 0.515f), style = Stroke(width = 3f))
+            // Cat ears
+            val leftEar = Path().apply {
+                moveTo(sx * 0.285f, sy * 0.315f)
+                lineTo(sx * 0.335f, sy * 0.205f)
+                lineTo(sx * 0.425f, sy * 0.315f)
+                close()
+            }
+            val rightEar = Path().apply {
+                moveTo(sx * 0.575f, sy * 0.315f)
+                lineTo(sx * 0.675f, sy * 0.205f)
+                lineTo(sx * 0.72f, sy * 0.315f)
+                close()
+            }
+            drawPath(leftEar, Color(0xFFFAF4FF))
+            drawPath(rightEar, Color(0xFFFAF4FF))
+            drawPath(leftEar, Color(0xFFB87BFF), style = Stroke(width = 5f))
+            drawPath(rightEar, Color(0xFFB87BFF), style = Stroke(width = 5f))
+            // Soft white kitten face
+            drawOval(
+                Brush.verticalGradient(listOf(Color.White, Color(0xFFE4D9FF))),
+                topLeft = Offset(sx * 0.27f, sy * 0.265f),
+                size = Size(sx * 0.46f, sy * 0.235f)
+            )
+            // Headphone cups and headband
+            drawOval(Color(0xFF17143C), Offset(sx * 0.235f, sy * 0.295f), Size(sx * 0.12f, sy * 0.16f))
+            drawOval(Color(0xFFD77BFF), Offset(sx * 0.255f, sy * 0.315f), Size(sx * 0.075f, sy * 0.12f))
+            drawOval(Color(0xFF17143C), Offset(sx * 0.645f, sy * 0.295f), Size(sx * 0.12f, sy * 0.16f))
+            drawOval(Color(0xFFD77BFF), Offset(sx * 0.67f, sy * 0.315f), Size(sx * 0.075f, sy * 0.12f))
+            drawArc(Color(0xFF21164F), 180f, 180f, false,
+                Offset(sx * 0.285f, sy * 0.22f), Size(sx * 0.43f, sy * 0.22f),
+                style = Stroke(width = 13f)
+            )
+            // Closed happy eyes, tiny nose and smile
+            drawLine(Color(0xFF29213E), Offset(sx * 0.385f, sy * 0.38f), Offset(sx * 0.425f, sy * 0.39f), 5f)
+            drawLine(Color(0xFF29213E), Offset(sx * 0.575f, sy * 0.39f), Offset(sx * 0.615f, sy * 0.38f), 5f)
+            drawCircle(Color(0xFFEA83C5), 5f, Offset(sx * 0.5f, sy * 0.405f))
+            drawArc(Color(0xFF8D5A9D), 15f, 150f, false,
+                Offset(sx * 0.455f, sy * 0.405f), Size(sx * 0.09f, sy * 0.055f),
+                style = Stroke(width = 3f)
+            )
+            // Orbit around the planet
+            drawOval(Color(0xFFDA8AFF), Offset(sx * 0.08f, sy * 0.48f),
+                Size(sx * 0.84f, sy * 0.12f), style = Stroke(width = 4f))
+        }
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 26.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(Modifier.weight(0.56f))
+            Text("AETHERON", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 3.sp)
+            Text("B R O W S E R", color = Color(0xFFE4C9FF), fontSize = 13.sp, letterSpacing = 5.sp)
+            Spacer(Modifier.height(14.dp))
+            Text("Explore More  •  Faster  •  Smarter", color = Color(0xFFE6D9FF),
+                fontSize = 13.sp, textAlign = TextAlign.Center)
+            Spacer(Modifier.weight(0.23f))
+            Canvas(Modifier.fillMaxWidth().height(18.dp)) {
+                val barHeight = 9.dp.toPx()
+                val top = (size.height - barHeight) / 2f
+                val radius = barHeight / 2f
+                drawRoundRect(Color(0xFF100D39), Offset(0f, top), Size(size.width, barHeight),
+                    androidx.compose.ui.geometry.CornerRadius(radius))
+                drawRoundRect(Color(0xFF9A55FF), Offset(0f, top), Size(size.width, barHeight),
+                    androidx.compose.ui.geometry.CornerRadius(radius), style = Stroke(width = 2.dp.toPx()))
+                drawRoundRect(
+                    Brush.horizontalGradient(listOf(Color(0xFFB9A0FF), Color(0xFFEC83FF))),
+                    Offset(2.dp.toPx(), top + 2.dp.toPx()),
+                    Size((size.width - 4.dp.toPx()) * progress.value.coerceIn(0f, 1f), barHeight - 4.dp.toPx()),
+                    androidx.compose.ui.geometry.CornerRadius(radius)
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Text("✦  Loading...  ✦", color = Color.White.copy(alpha = pulse.value),
+                fontSize = 15.sp, letterSpacing = 1.sp)
+            Spacer(Modifier.weight(0.08f))
+        }
     }
 }
