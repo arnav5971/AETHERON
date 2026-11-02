@@ -626,36 +626,6 @@ private fun AetheronBrowser(context: Context) {
 
     Surface(Modifier.fillMaxSize(), color = Color(0xFF090C18)) {
         Column(Modifier.fillMaxSize()) {
-            if (page != "Web" && page != "Home") {
-            // Tab strip
-            Row(
-                Modifier.fillMaxWidth().height(56.dp).background(Color(0xFF101529))
-                    .padding(start = 16.dp, end = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    Modifier.weight(1f).fillMaxHeight().padding(top = 5.dp, bottom = 0.dp)
-                        .background(Color(0xFF1A2037), RoundedCornerShape(topStart = 15.dp, topEnd = 15.dp))
-                        .padding(horizontal = 15.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Public, null, tint = Ink, modifier = Modifier.size(22.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Text(tabTitle, color = Ink, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Spacer(Modifier.weight(1f))
-                    IconButton(onClick = { openHome() }, modifier = Modifier.size(34.dp)) {
-                        Icon(Icons.Default.Close, "Close tab", tint = Muted)
-                    }
-                }
-                IconButton(onClick = { openHome() }) { Icon(Icons.Default.Add, "New tab", tint = Muted) }
-                IconButton(onClick = { showTabs = true }) {
-                    Icon(Icons.Default.Tab, "Tabs", tint = Muted)
-                }
-                Text(tabCount.toString(), color = Muted, fontSize = 13.sp)
-            }
-            HorizontalDivider(color = Line)
-
-            }
 
             if (page != "Home") {
             // Browser toolbar
@@ -713,9 +683,6 @@ private fun AetheronBrowser(context: Context) {
                         Icon(Icons.Default.StarBorder, "Bookmark", tint = Muted)
                     }
                 }
-                if (!compactToolbar) {
-                    IconButton(onClick = { openHome() }) { Icon(Icons.Default.Add, "New tab", tint = Ink) }
-                }
                 Box {
                     IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreHoriz, "More", tint = Ink) }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
@@ -735,7 +702,6 @@ private fun AetheronBrowser(context: Context) {
                             (context as? MainActivity)?.enableAppNotifications()
                         })
                         DropdownMenuItem(text = { Text("Home") }, leadingIcon = { Icon(Icons.Default.Home, null) }, onClick = { openHome(); menuOpen = false })
-                        DropdownMenuItem(text = { Text("New tab") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { openHome(); menuOpen = false })
                         DropdownMenuItem(text = { Text("Bookmarks") }, leadingIcon = { Icon(Icons.Default.Bookmarks, null) }, onClick = { page = "Saved"; menuOpen = false })
                         DropdownMenuItem(text = { Text("History") }, leadingIcon = { Icon(Icons.Default.History, null) }, onClick = { page = "History"; menuOpen = false })
                         DropdownMenuItem(text = { Text("Downloads") }, leadingIcon = { Icon(Icons.Default.Download, null) }, onClick = {
@@ -744,7 +710,6 @@ private fun AetheronBrowser(context: Context) {
                                 Toast.makeText(context, "Open Downloads from your device", Toast.LENGTH_SHORT).show()
                             }
                         })
-                        DropdownMenuItem(text = { Text("AI Assistant") }, leadingIcon = { Icon(Icons.Default.AutoAwesome, null) }, onClick = { page = "AI"; menuOpen = false })
                         DropdownMenuItem(text = { Text("Privacy & Security") }, leadingIcon = { Icon(Icons.Default.Security, null) }, onClick = { page = "Privacy"; menuOpen = false })
                         DropdownMenuItem(text = { Text("Settings") }, leadingIcon = { Icon(Icons.Default.Settings, null) }, onClick = { page = "Settings"; menuOpen = false })
                         DropdownMenuItem(text = { Text("AI Mode · Google") }, leadingIcon = { Icon(Icons.Default.Language, null) }, onClick = { menuOpen = false; navigate(GOOGLE_AI_MODE) })
