@@ -1,10 +1,5 @@
 package com.aetheron.browser
 
-import android.content.Intent
-import android.net.Uri
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,7 +30,7 @@ fun DeveloperResourcesScreen(
     onOpenCategory: (String) -> Unit
 ) {
     val categories = listOf(
-        ResourceCategory("Cloud providers", "Always-free cloud infrastructure and compute offers", "major-cloud-providers"),
+        ResourceCategory("Cloud providers", "Always-free cloud infrastructure and compute offers", "major-cloud-providers-always-free-limits"),
         ResourceCategory("APIs, data & machine learning", "Free API tiers, datasets and ML services", "apis-data-and-ml"),
         ResourceCategory("Generative AI", "AI platforms, model access and developer APIs", "generative-ai"),
         ResourceCategory("Backend as a Service", "Hosted backend, authentication and app services", "baas"),
