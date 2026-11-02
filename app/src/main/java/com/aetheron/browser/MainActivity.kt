@@ -1030,8 +1030,15 @@ private fun AetheronBrowser(context: Context) {
                         onSearch = { navigate(it) },
                         onQuick = { navigate(it) },
                         onBookmarks = { page = "Saved" },
-                        onAi = { navigate(GOOGLE_AI_MODE) },
-                        onResources = { page = "Resources" }
+                        onHistory = { page = "History" },
+                        onAi = { page = "AI" },
+                        onResources = { page = "Resources" },
+                        onPrivacy = { page = "Privacy" },
+                        onDownloads = {
+                            try { context.startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) }
+                            catch (_: Exception) { Toast.makeText(context, "Downloads screen is unavailable on this device", Toast.LENGTH_SHORT).show() }
+                        },
+                        onSettings = { page = "Settings" }
                     )
                 } else if (page == "AI" || page == "Privacy" || page == "Settings") {
                     AetheronFeatureScreen(
@@ -1125,8 +1132,12 @@ private fun HomeScreen(
     onSearch: (String) -> Unit,
     onQuick: (String) -> Unit,
     onBookmarks: () -> Unit,
+    onHistory: () -> Unit,
     onAi: () -> Unit,
-    onResources: () -> Unit
+    onResources: () -> Unit,
+    onPrivacy: () -> Unit,
+    onDownloads: () -> Unit,
+    onSettings: () -> Unit
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
@@ -1138,9 +1149,9 @@ private fun HomeScreen(
     )
     val tools = listOf(
         Triple("Developer\nTools", Icons.Default.RocketLaunch, onResources),
-        Triple("Privacy &\nSecurity", Icons.Default.Shield, onResources),
-        Triple("Downloads", Icons.Default.Download, onResources),
-        Triple("Settings", Icons.Default.Settings, onResources)
+        Triple("Privacy &\nSecurity", Icons.Default.Shield, onPrivacy),
+        Triple("Downloads", Icons.Default.Download, onDownloads),
+        Triple("Settings", Icons.Default.Settings, onSettings)
     )
     val violet = Color(0xFFB34DFF)
     val cyan = Color(0xFF16CFFF)
@@ -1241,7 +1252,7 @@ private fun HomeScreen(
                     Triple("AI Assistant", Icons.Default.AutoAwesome, onAi),
                     Triple("Tools", Icons.Default.Build, onResources),
                     Triple("Bookmarks", Icons.Default.Star, onBookmarks),
-                    Triple("History", Icons.Default.History, onBookmarks)
+                    Triple("History", Icons.Default.History, onHistory)
                 ).forEach { item ->
                     Column(Modifier.weight(1f).clickable { item.third() }.padding(vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(Modifier.size(62.dp).background(Color(0xFF21194F), RoundedCornerShape(20.dp)), contentAlignment = Alignment.Center) {
@@ -1309,13 +1320,13 @@ private fun HomeScreen(
             ) {
                 Icon(Icons.Default.VerifiedUser, null, tint = Color(0xFF25E6A0), modifier = Modifier.size(25.dp))
                 Spacer(Modifier.width(9.dp))
-                Column(Modifier.weight(1f)) {
+                Column(Modifier.weight(1f).clickable(onClick = onPrivacy)) {
                     Text("Privacy controls", color = Color(0xFF25E6A0), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     Text("Manage site permissions", color = Color(0xFFC5CBE5), fontSize = 9.sp)
                 }
                 Box(Modifier.width(1.dp).height(30.dp).background(Color(0xFF465078)))
                 Spacer(Modifier.width(12.dp))
-                Column {
+                Column(Modifier.clickable(onClick = onSettings)) {
                     Text("Browser", color = Color(0xFF25E6A0), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     Text("Tools & settings", color = Color(0xFFC5CBE5), fontSize = 9.sp)
                 }
@@ -1334,11 +1345,11 @@ private fun HomeScreen(
                     Icon(Icons.Default.Bookmarks, null, tint = Color(0xFF9EA7D4), modifier = Modifier.size(22.dp))
                     Text("Saved", color = Color(0xFF9EA7D4), fontSize = 10.sp)
                 }
-                Column(Modifier.clickable(onClick = onResources), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.clickable(onClick = onDownloads), horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.Download, null, tint = Color(0xFF9EA7D4), modifier = Modifier.size(22.dp))
                     Text("Downloads", color = Color(0xFF9EA7D4), fontSize = 10.sp)
                 }
-                Column(Modifier.clickable(onClick = onResources), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.clickable(onClick = onSettings), horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.MoreVert, null, tint = Color(0xFF9EA7D4), modifier = Modifier.size(22.dp))
                     Text("More", color = Color(0xFF9EA7D4), fontSize = 10.sp)
                 }
