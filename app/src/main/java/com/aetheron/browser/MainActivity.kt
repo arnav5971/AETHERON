@@ -1039,7 +1039,9 @@ private fun AetheronBrowser(context: Context) {
                         onSearch = { navigate(it) },
                         onHome = { page = "Home" },
                         onVoiceSearch = {
-                            activity.startVoiceSearch { spoken -> if (spoken.isNotBlank()) navigate(spoken) }
+                            (context as? MainActivity)?.startVoiceSearch { spoken ->
+                                if (spoken.isNotBlank()) navigate(spoken)
+                            }
                         },
                         onVisualSearch = { navigate("https://lens.google.com/") },
                         onQuick = { navigate(it) },
@@ -1162,6 +1164,8 @@ private fun AetheronBrowser(context: Context) {
 private fun HomeScreen(
     onSearch: (String) -> Unit,
     onHome: () -> Unit,
+    onVoiceSearch: () -> Unit,
+    onVisualSearch: () -> Unit,
     onQuick: (String) -> Unit,
     onBookmarks: () -> Unit,
     onHistory: () -> Unit,
